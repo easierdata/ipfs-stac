@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='easier_python_client',
-    packages=find_packages(include=['easier_python_client']),
+    packages=find_packages(),
     version='0.1.0',
     description='The EASIER Data Initiative Python IPFS Client',
     author='The EASIER Data Initiative',
