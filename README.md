@@ -1,5 +1,7 @@
 # The EASIER Data Initiative's Python Client
 
+View source on [GitHub](https://github.com/easierdata/ipfs-stac)
+
 ### Features
 
 * Simple CID Data Retrieval
