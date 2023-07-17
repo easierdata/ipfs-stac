@@ -83,3 +83,10 @@ print(band) # QmNddx9BvBsQMXgwp6a83D2wiLrmovgCpRKVYKSJoWNNbx
 # You can fetch the band bytes through the fetch method
 data = band.fetch()
 ```
+
+# Attributions
+
+This project was made possible by the following
+
+* [ipfsspec](https://github.com/fsspec/ipfsspec)
+* [pystac-client](https://github.com/stac-utils/pystac-client)
