@@ -15,7 +15,7 @@ View source on [GitHub](https://github.com/easierdata/ipfs-stac)
 The client can be installed through pip
 
 ```bash
-$ pip install easier-python-client
+$ pip install ipfs-stac
 ```
 
 ### Language Support
@@ -27,7 +27,7 @@ The client currently supports Python versions 3+
 ### Create a client object
 
 ```python
-from easier_python_client import client
+from ipfs_stac import client
 
 # Create a new client object
 easier = client.web3(local_gateway="", stac="")
