@@ -66,25 +66,25 @@ class web3():
 
         return all[index]
 
-    def getBandFromItem(self, item, band: str):
+    def getAssetFromItem(self, item, asset: str):
         try:
             item_dict = item.to_dict()
-            cid = item_dict["assets"][f"{band}"]["alternate"]["IPFS"]["href"].split('/')[-1]
+            cid = item_dict["assets"][f"{asset}"]["alternate"]["IPFS"]["href"].split('/')[-1]
             
-            return band_Obj(str(cid), self.local_gateway)
+            return asset(str(cid), self.local_gateway)
         except Exception as e: 
-            print(f"Error with getting band: {e}")
+            print(f"Error with getting asset: {e}")
 
-    def getBandsFromItem(self, item, bands):
+    def getAssetsFromItem(self, item, assets):
         try:
-            bandsArray = []
+            assetArray = []
 
-            for band in bands:
-                bandsArray.append(self.getBandFromItem(item, band))
+            for i in assets:
+                assetArray.append(self.getAssetFromItem(item, i))
 
-            return bandsArray
+            return assetArray
         except Exception as e: 
-            print(f"Error with getting band: {e}")
+            print(f"Error with getting assets: {e}")
 
     # Write contents from CID to local disk - needs fixing
     def writeCID(self, cid: str, filePath: str):
@@ -107,7 +107,7 @@ class web3():
                 # Write new content to the file
                 file.write(f'IPFSSPEC_GATEWAYS="{self.local_gateway}"')
 
-class band_Obj():
+class asset():
     cid = ""
     local_gateway = ""
 
