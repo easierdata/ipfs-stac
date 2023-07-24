@@ -9,11 +9,11 @@ from array import array
 
 class web3():
     local_gateway = ""
-    stac = ""
+    stac_endpoint = ""
 
-    def __init__(self, local_gateway=None, stac=None):
+    def __init__(self, local_gateway=None, stac_endpoint=None):
         self.local_gateway = local_gateway
-        self.stac = stac
+        self.stac_endpoint = stac_endpoint
         self.forceLocalNode()
 
     # Function to retrieve raw text from CIDs
@@ -44,7 +44,7 @@ class web3():
 
     # Search catalog by bounding box
     def searchSTACByBox(self, bbox: array, collections: array):
-        catalog = Client.open(self.stac)
+        catalog = Client.open(self.stac_endpoint)
         search = catalog.search(
             collections=collections,
             bbox=bbox,
@@ -56,7 +56,7 @@ class web3():
 
     # Search catalog by bounding box and return item by index
     def searchSTACByBoxIndex(self, bbox: array, collections: array, index: int):
-        catalog = Client.open(self.stac)
+        catalog = Client.open(self.stac_endpoint)
         search = catalog.search(
             collections=collections,
             bbox=bbox,
