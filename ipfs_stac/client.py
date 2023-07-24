@@ -43,7 +43,19 @@ class web3():
             print(f"Error with dataframe retrieval: {e}")
 
     # Search catalog by bounding box
-    def searchSTACByBox(self, bbox: array, collections: array, index: int):
+    def searchSTACByBox(self, bbox: array, collections: array):
+        catalog = Client.open(self.stac)
+        search = catalog.search(
+            collections=collections,
+            bbox=bbox,
+        )
+
+        all = search.item_collection()
+
+        return all
+
+    # Search catalog by bounding box and return item by index
+    def searchSTACByBoxIndex(self, bbox: array, collections: array, index: int):
         catalog = Client.open(self.stac)
         search = catalog.search(
             collections=collections,
