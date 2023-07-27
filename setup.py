@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 setup(
     name='ipfs_stac',
     packages=find_packages(include=['ipfs_stac']),
-    version='0.1.6',
+    version='0.1.7',
     description='The EASIER Data Initiative Python IPFS-STAC Client',
     author='The EASIER Data Initiative',
     license='MIT',
