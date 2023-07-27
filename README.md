@@ -28,7 +28,10 @@ The client currently supports Python versions 3+
 from ipfs_stac import client
 
 # Create a new client object
-easier = client.web3(local_gateway="", stac="")
+easier = client.web3(local_gateway="", stac_endpoint="")
+
+# If you want to force using a local node, specify the endpoint in the local_gateway argument
+easier = client.web3(local_gateway="http://127.0.0.1:8000", stac_endpoint="")
 ```
 
 ### Fetch a CID from IPFS
@@ -58,30 +61,39 @@ Data frame length: 3510
 
 ```python
 easier = client.web3(local_gateway="", stac="<YOUR STAC ENDPOINT GOES HERE>")
+"""
+Retrieve all items from STAC catalog that are in bounding box with searchSTACByBox method (2 arguments)
+1. Coordinates of bounding box
+2. Name(s) of STAC collections)
+"""
+items = easier.searchSTACByBox([-76.964657, 38.978967, -76.928008, 39.002783], ["<STAC COLLECTION GOES HERE>"])
 
 """
-The searchSTACByBox by method takes 3 arguments
+The searchSTACByBoxIndex by method takes 3 arguments
 1. Coordinates for the bounding box
 2. Name of the STAC collection to query
 3. Index of the item you want to retrieve
 """
-item = easier.searchSTACByBox([-76.964657, 38.978967, -76.928008, 39.002783], ["<STAC COLLECTION GOES HERE>"], 0)
-band = easier.getBandFromItem(item, 'BAND NAME GOES HERE') # Returns band object
+item = easier.searchSTACByBoxIndex([-76.964657, 38.978967, -76.928008, 39.002783], ["<STAC COLLECTION GOES HERE>"], 0)
+band = easier.getAssetFromItem(item, 'ASSET NAME GOES HERE') # Returns asset object
 
-# Optionally, you can fetch multiple bands by the getBandsFromItem Method
-bands = easier.getBandsFromItem(item, ["blue", "red"]) # Returns array of bands
+# Optionally, you can fetch multiple assets by the getBandsFromItem Method
+bands = easier.getAssetsFromItem(item, ["blue", "red"]) # Returns array of assets
 ```
 
-### The band object
+### The asset object
 
 ```python
 # This snippet extends the previous under "Query STAC API By Bounding Box"
 
-# The band object, when printed, will return the CID
+# The asset object, when printed, will return the CID
 print(band) # QmNddx9BvBsQMXgwp6a83D2wiLrmovgCpRKVYKSJoWNNbx
 
-# You can fetch the band bytes through the fetch method
+# You can fetch the asset bytes through the fetch method
 data = band.fetch()
+
+# Alternatively, you can fetch the asset as an np array
+asset_array = band.fetchNPArray()
 ```
 
 # Attributions
