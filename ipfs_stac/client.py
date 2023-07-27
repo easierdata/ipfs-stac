@@ -12,12 +12,22 @@ class web3():
     stac_endpoint = ""
 
     def __init__(self, local_gateway=None, stac_endpoint=None):
+        """
+        web3 client constructor
+
+        :param str local_gateway: Local gateway endpoint, if left blank, will not force local gateway usage
+        :param str stac_endpoint: STAC browser endpoint
+        """
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
         self.forceLocalNode()
 
-    # Function to retrieve raw text from CIDs
     def getFromCID(self, cid: str):
+        """
+        Retrieves raw data from CID
+
+        :param str cid: CID to retrieve 
+        """
         try:
             with fsspec.open(f"ipfs://{cid}", "r") as contents:
                 data = contents.read()
@@ -25,8 +35,12 @@ class web3():
         except Exception as e: 
             print(f"Error with CID retrieval: {e}")
 
-    # Function to parse CID to pandas dataframe
     def getCSVDataframeFromCID(self, cid: str):
+        """
+        Parse CSV CID to pandas dataframe
+
+        :param str cid: CID to retrieve 
+        """
         try:
             data = self.getFromCID(cid)
 
@@ -42,8 +56,13 @@ class web3():
         except Exception as e: 
             print(f"Error with dataframe retrieval: {e}")
 
-    # Search catalog by bounding box
     def searchSTACByBox(self, bbox: array, collections: array):
+        """
+        Search STAC catalog by bounding box and return array of items
+
+        :param bbox array: Array of coordinates for bounding box
+        :param collections array: Array of collection names (strings)
+        """
         catalog = Client.open(self.stac_endpoint)
         search = catalog.search(
             collections=collections,
@@ -54,8 +73,14 @@ class web3():
 
         return all
 
-    # Search catalog by bounding box and return item by index
     def searchSTACByBoxIndex(self, bbox: array, collections: array, index: int):
+        """
+        Search STAC catalog by bounding box and return singular item
+
+        :param bbox array: Array of coordinates for bounding box
+        :param collections array: Array of collection names (strings)
+        :param index int: Index of item to return
+        """
         catalog = Client.open(self.stac_endpoint)
         search = catalog.search(
             collections=collections,
@@ -67,6 +92,12 @@ class web3():
         return all[index]
 
     def getAssetFromItem(self, item, asset: str):
+        """
+        Returns asset object from item
+
+        :param item: STAC catalog item
+        :param asset str: Name of asset to return
+        """
         try:
             item_dict = item.to_dict()
             cid = item_dict["assets"][f"{asset}"]["alternate"]["IPFS"]["href"].split('/')[-1]
@@ -76,6 +107,12 @@ class web3():
             print(f"Error with getting asset: {e}")
 
     def getAssetsFromItem(self, item, assets):
+        """
+        Returns array of asset objects from item
+
+        :param item: STAC catalog item
+        :param asset array: Names of asset to return (strings)
+        """
         try:
             assetArray = []
 
@@ -86,8 +123,13 @@ class web3():
         except Exception as e: 
             print(f"Error with getting assets: {e}")
 
-    # Write contents from CID to local disk - needs fixing
     def writeCID(self, cid: str, filePath: str):
+        """
+        Write CID contents to local file system (WIP)
+
+        :param CID str: CID to retrieve
+        :param filePath str: Directory to write contents to
+        """
         try:
             with fsspec.open(f"ipfs://{cid}", "rb") as contents:
                 # Write data to local file path
@@ -96,8 +138,11 @@ class web3():
         except Exception as e: 
             print(f"Error with CID write: {e}")
 
-    # This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
     def forceLocalNode(self):
+        """
+        Forces the use of local node through env file
+        This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
+        """
         if self.local_gateway == "": 
             with open('.env', 'w') as file:
                 # Write new content to the file
@@ -107,11 +152,32 @@ class web3():
                 # Write new content to the file
                 file.write(f'IPFSSPEC_GATEWAYS="{self.local_gateway}"')
 
+    def uploadToIPFS(self, file_path) -> str:
+        """
+        Upload file to IPFS by local node
+
+        :param str file_path: The absolute/relative path to file
+        :rtype: str
+        """
+        files = {
+            "file": open(file_path, "rb")
+        }
+
+        response = requests.post(f"{self.local_gateway}/api/v0/add", files=files)
+        data = response.json()
+        return data["Hash"] # CID
+
 class asset():
     cid = ""
     local_gateway = ""
 
     def __init__(self, cid: str, local_gateway: str):
+        """
+        Constructor for asset object
+
+        :param cid str: The CID associated with the object
+        :param local_gateway str: Local gateway endpoint
+        """
         self.cid = cid
         self.local_gateway = local_gateway
 
@@ -119,6 +185,7 @@ class asset():
     def __str__(self):
         return self.cid
     
+    # Returns asset bytes
     def fetch(self):
         try:
             print(f"Fetching {self.cid.split('/')[-1]}")
