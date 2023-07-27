@@ -6,6 +6,8 @@ import io
 from bs4 import BeautifulSoup
 from pystac_client import Client
 from array import array
+from PIL import Image
+import numpy as np
 
 class web3():
     local_gateway = ""
@@ -211,3 +213,19 @@ class asset():
             print("Data pinned successfully")
         else:
             print("Error pinning data")
+
+    # Returns asset as np array if image
+    def fetchNPArray(self):
+        try:
+            print(f"Fetching {self.cid.split('/')[-1]}")
+
+            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
+                file = contents.read()
+            
+            data = io.BytesIO(file)
+
+            im = Image.open(data)
+
+            return np.array(im)
+        except Exception as e: 
+            print(f"Error with CID fetch: {e}")
