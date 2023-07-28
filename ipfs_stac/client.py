@@ -8,6 +8,7 @@ from pystac_client import Client
 from array import array
 from PIL import Image
 import numpy as np
+import os
 
 class web3():
     local_gateway = ""
@@ -23,6 +24,15 @@ class web3():
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
         self.forceLocalNode()
+
+    def startDaemon(self):
+        """
+        Starts Kubo CLI Daemon
+        """
+        try:
+            os.system("ipfs daemon")
+        except Exception as e: 
+            print(f"Error with starting Daemon: {e}")
 
     def getFromCID(self, cid: str):
         """
