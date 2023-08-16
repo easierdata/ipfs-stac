@@ -10,7 +10,8 @@ from PIL import Image
 import numpy as np
 import os
 
-class web3():
+
+class web3:
     local_gateway = ""
     stac_endpoint = ""
 
@@ -31,33 +32,33 @@ class web3():
         """
         try:
             os.system("ipfs daemon")
-        except Exception as e: 
+        except Exception as e:
             print(f"Error with starting Daemon: {e}")
 
     def getFromCID(self, cid: str):
         """
         Retrieves raw data from CID
 
-        :param str cid: CID to retrieve 
+        :param str cid: CID to retrieve
         """
         try:
             with fsspec.open(f"ipfs://{cid}", "r") as contents:
                 data = contents.read()
                 return data
-        except Exception as e: 
+        except Exception as e:
             print(f"Error with CID retrieval: {e}")
 
     def getCSVDataframeFromCID(self, cid: str):
         """
         Parse CSV CID to pandas dataframe
 
-        :param str cid: CID to retrieve 
+        :param str cid: CID to retrieve
         """
         try:
             data = self.getFromCID(cid)
 
             # Parse for contents endpoint
-            soup = BeautifulSoup(data, 'html.parser')
+            soup = BeautifulSoup(data, "html.parser")
             endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
 
             response = requests.get(endpoint)
@@ -65,7 +66,7 @@ class web3():
             df = pd.read_csv(csv_data)
 
             return df
-        except Exception as e: 
+        except Exception as e:
             print(f"Error with dataframe retrieval: {e}")
 
     def searchSTACByBox(self, bbox: array, collections: array):
@@ -112,10 +113,12 @@ class web3():
         """
         try:
             item_dict = item.to_dict()
-            cid = item_dict["assets"][f"{asset}"]["alternate"]["IPFS"]["href"].split('/')[-1]
-            
-            return asset(str(cid), self.local_gateway)
-        except Exception as e: 
+            cid = item_dict["assets"][f"{asset}"]["alternate"]["IPFS"]["href"].split(
+                "/"
+            )[-1]
+
+            return Asset(str(cid), self.local_gateway)
+        except Exception as e:
             print(f"Error with getting asset: {e}")
 
     def getAssetsFromItem(self, item, assets):
@@ -132,7 +135,7 @@ class web3():
                 assetArray.append(self.getAssetFromItem(item, i))
 
             return assetArray
-        except Exception as e: 
+        except Exception as e:
             print(f"Error with getting assets: {e}")
 
     def writeCID(self, cid: str, filePath: str):
@@ -147,7 +150,7 @@ class web3():
                 # Write data to local file path
                 with open(filePath, "wb") as copy:
                     copy.write(contents.read())
-        except Exception as e: 
+        except Exception as e:
             print(f"Error with CID write: {e}")
 
     def forceLocalNode(self):
@@ -155,12 +158,14 @@ class web3():
         Forces the use of local node through env file
         This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
         """
-        if self.local_gateway == "": 
-            with open('.env', 'w') as file:
+        if self.local_gateway == "":
+            with open(".env", "w") as file:
                 # Write new content to the file
-                file.write('IPFSSPEC_GATEWAYS="http://127.0.0.1:8080,https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com",https://dweb.link"')
+                file.write(
+                    'IPFSSPEC_GATEWAYS="http://127.0.0.1:8080,https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com",https://dweb.link"'
+                )
         else:
-            with open('.env', 'w') as file:
+            with open(".env", "w") as file:
                 # Write new content to the file
                 file.write(f'IPFSSPEC_GATEWAYS="{self.local_gateway}"')
 
@@ -171,15 +176,14 @@ class web3():
         :param str file_path: The absolute/relative path to file
         :rtype: str
         """
-        files = {
-            "file": open(file_path, "rb")
-        }
+        files = {"file": open(file_path, "rb")}
 
         response = requests.post(f"{self.local_gateway}/api/v0/add", files=files)
         data = response.json()
-        return data["Hash"] # CID
+        return data["Hash"]  # CID
 
-class asset():
+
+class Asset:
     cid = ""
     local_gateway = ""
 
@@ -196,7 +200,7 @@ class asset():
     # Return cid when printed
     def __str__(self):
         return self.cid
-    
+
     # Returns asset bytes
     def fetch(self):
         try:
@@ -204,20 +208,20 @@ class asset():
 
             with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
                 file = contents.read()
-            
+
             data = io.BytesIO(file)
 
-            return data 
-        except Exception as e: 
+            return data
+        except Exception as e:
             print(f"Error with CID fetch: {e}")
-    
+
     # Pin to local kubo node
     def pin(self):
-        response = requests.post(f"{self.local_gateway}/api/v0/pin/add", headers={
-            "Content-Type": "application/json"
-        }, json={
-            "arg": self.cid
-        })
+        response = requests.post(
+            f"{self.local_gateway}/api/v0/pin/add",
+            headers={"Content-Type": "application/json"},
+            json={"arg": self.cid},
+        )
 
         if response.status_code == 200:
             print("Data pinned successfully")
@@ -231,11 +235,11 @@ class asset():
 
             with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
                 file = contents.read()
-            
+
             data = io.BytesIO(file)
 
             im = Image.open(data)
 
             return np.array(im)
-        except Exception as e: 
+        except Exception as e:
             print(f"Error with CID fetch: {e}")
