@@ -1,4 +1,3 @@
-import json
 import fsspec
 import requests
 import pandas as pd
@@ -11,7 +10,7 @@ import numpy as np
 import os
 
 
-class web3:
+class Web3:
     local_gateway = ""
     stac_endpoint = ""
 
@@ -117,7 +116,7 @@ class web3:
                 "/"
             )[-1]
 
-            return Asset(str(cid), self.local_gateway)
+            return Asset(cid, self.local_gateway)
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
