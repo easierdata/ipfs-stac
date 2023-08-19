@@ -23,7 +23,7 @@ class Web3:
         """
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
-        self.forceLocalNode()
+        # self.forceLocalNode() #TODO Need to re-think. It Sometimes writes 'None" to .env file during testing
 
     def startDaemon(self):
         """
