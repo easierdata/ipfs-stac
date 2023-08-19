@@ -168,7 +168,7 @@ class Web3:
                 # Write new content to the file
                 file.write(f'IPFSSPEC_GATEWAYS="{self.local_gateway}"')
 
-    def uploadToIPFS(self, file_path) -> str:
+    def uploadToIPFS(self, file_path) -> str: #TODO Only Works if port is 5001
         """
         Upload file to IPFS by local node
 
