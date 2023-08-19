@@ -20,15 +20,17 @@ def start_ipfs_if_needed():
 
 class SetUp(TestCase):
     TEST_CID = "Qmf1rtki74jvYmGeqaaV51hzeiaa6DyWc98fzDiuPatzyy"
-    TEST_FILE = "./data/hello.txt"
+    TEST_FILE = "tests/data/hello.txt"
 
     @classmethod
     def setUpClass(cls):
         start_ipfs_if_needed()
 
-        try:
-            subprocess.run(["ipfs", "block", "stat", cls.TEST_CID], check=True)
-        except subprocess.CalledProcessError:
+        # Check if the CID exists in the pinned objects
+        result = subprocess.run(f"ipfs pin ls | grep {cls.TEST_CID}", shell=True)
+
+        # If CID is not found, add the test file
+        if result.returncode != 0:
             try:
                 subprocess.run(["ipfs", "add", cls.TEST_FILE], check=True)
             except subprocess.CalledProcessError as e:
