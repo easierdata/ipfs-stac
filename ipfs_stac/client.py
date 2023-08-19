@@ -215,7 +215,7 @@ class Asset:
             print(f"Error with CID fetch: {e}")
 
     # Pin to local kubo node
-    def pin(self):
+    def pin(self): #TODO needs to use 5001 port?
         response = requests.post(
             f"{self.local_gateway}/api/v0/pin/add",
             headers={"Content-Type": "application/json"},

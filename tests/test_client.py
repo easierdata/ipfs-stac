@@ -1,6 +1,9 @@
 from ipfs_stac.client import Web3
 from pystac import Item
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, mock_open, patch
+from bs4 import BeautifulSoup
+import pandas as pd
+import io
 from .base import SetUp
 
 
@@ -12,11 +15,47 @@ class TestClient(SetUp):
         data = self.client.getFromCID(self.TEST_CID)
         self.assertEqual(data, "Hello World!")
 
-    # def test_uploadToIPFS(self):
-    #     test_file = self.TEST_FILE
-    #     cid = self.client.uploadToIPFS(test_file)
-    #     data = self.client.getFromCID(cid)
-    #     self.assertEqual(data, "Foobar")
+
+
+    @patch('os.system')
+    def test_startDaemon(self, mock_system):
+        # Your client class instantiation here
+        client = Web3(stac_endpoint='fake_endpoint')
+
+        # Call the function
+        client.startDaemon()
+
+        # Assert that the correct command was called
+        mock_system.assert_called_once_with("ipfs daemon")
+    
+    @patch('requests.get')
+    @patch('ipfs_stac.client.Web3.getFromCID')
+    def test_getCSVDataframeFromCID(self, mock_getFromCID, mock_get):
+        # Simulating the HTML content
+        html_content = '<a href="http://example.tech/link1"></a><a href="link2"></a>'
+        soup = BeautifulSoup(html_content, "html.parser")
+        endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
+        # Simulating the CSV response
+        csv_response = Mock()
+        csv_response.text = 'column1,column2\nvalue1,value2'
+        mock_get.return_value = csv_response
+        # Simulating the HTML content returned from CID
+        mock_getFromCID.return_value = html_content
+
+        # Your client class instantiation here
+        client = Web3(stac_endpoint='fake_endpoint')
+
+        # Call the function
+        cid = 'fake_cid'
+        df = client.getCSVDataframeFromCID(cid)
+
+        # Assert that the correct dataframe was returned
+        expected_df = pd.read_csv(io.StringIO(csv_response.text))
+        pd.testing.assert_frame_equal(df, expected_df)
+
+        # Additional assertions to check that the correct functions were called
+        mock_getFromCID.assert_called_once_with(cid)
+        mock_get.assert_called_once_with(endpoint)
 
 
     @patch('pystac_client.client.Client.open')
@@ -74,6 +113,14 @@ class TestClient(SetUp):
         mock_open.assert_called_once_with('fake_endpoint')
         mock_catalog.search.assert_called_once_with(collections=collections, bbox=bbox)
         mock_search.item_collection.assert_called_once()
+
+
+    # def test_uploadToIPFS(self):
+    #     test_file = self.TEST_FILE
+    #     cid = self.client.uploadToIPFS(test_file)
+    #     data = self.client.getFromCID(cid)
+    #     self.assertEqual(data, "Foobar")
+
 
 
     def test_getAssetFromItem(self):
@@ -136,3 +183,46 @@ class TestClient(SetUp):
         self.assertEqual(str(assetArray[1]), "cid2")
 
 
+    @patch('fsspec.open')
+    def test_writeCID(self, mock_fsspec_open):
+        # Your client class instantiation here
+        client = Web3(stac_endpoint='fake_endpoint')
+
+        # Dummy CID and file path
+        cid = "fake_cid"
+        filePath = "path/to/yourfile.txt"
+
+        # Create a mock file object
+        mock_file = mock_open()
+        contents = b"file contents"
+
+        # Mock the fsspec open method
+        mock_fsspec_open.return_value.__enter__.return_value.read.return_value = contents
+
+        with patch("builtins.open", mock_file):
+            # Call the function
+            client.writeCID(cid, filePath)
+
+            # Assert that the file was opened with correct path and mode
+            mock_file.assert_called_once_with(filePath, "wb")
+
+            # Assert that the contents were written to the file
+            mock_file().write.assert_called_once_with(contents)
+
+
+    def test_asset():
+        pass
+
+    def test_asset_fetch():
+        pass
+
+    def test_asset_print():
+        pass
+
+    def test_asset_pin():
+        pass
+
+    def test_asset_fetchNPArray():
+        pass
+
+    
