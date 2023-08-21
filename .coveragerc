@@ -1,0 +1,8 @@
+[run]
+data_file = ./coverage/.coverage
+omit = 
+    */tests/*
+    */__init__.py
+
+[lcov]
+output = ./coverage/lcov.info

@@ -1,4 +1,3 @@
-import json
 import fsspec
 import requests
 import pandas as pd
@@ -11,7 +10,7 @@ import numpy as np
 import os
 
 
-class web3:
+class Web3:
     local_gateway = ""
     stac_endpoint = ""
 
@@ -24,7 +23,7 @@ class web3:
         """
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
-        self.forceLocalNode()
+        # self.forceLocalNode() #TODO Need to re-think. It Sometimes writes 'None" to .env file during testing
 
     def startDaemon(self):
         """
@@ -117,7 +116,7 @@ class web3:
                 "/"
             )[-1]
 
-            return Asset(str(cid), self.local_gateway)
+            return Asset(cid, self.local_gateway)
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
@@ -169,7 +168,7 @@ class web3:
                 # Write new content to the file
                 file.write(f'IPFSSPEC_GATEWAYS="{self.local_gateway}"')
 
-    def uploadToIPFS(self, file_path) -> str:
+    def uploadToIPFS(self, file_path) -> str: #TODO Only Works if port is 5001
         """
         Upload file to IPFS by local node
 
@@ -216,7 +215,7 @@ class Asset:
             print(f"Error with CID fetch: {e}")
 
     # Pin to local kubo node
-    def pin(self):
+    def pin(self): #TODO needs to use 5001 port?
         response = requests.post(
             f"{self.local_gateway}/api/v0/pin/add",
             headers={"Content-Type": "application/json"},
