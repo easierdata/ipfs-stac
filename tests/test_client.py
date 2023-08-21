@@ -1,7 +1,7 @@
 ## Standard Library Imports
 from unittest.mock import Mock, mock_open, patch
 import io
-# import subprocess
+import subprocess
 import numpy as np
 
 ## Third Party Imports
@@ -122,11 +122,11 @@ class TestClient(SetUp):
         mock_search.item_collection.assert_called_once()
 
 
-    # def test_uploadToIPFS(self):
-    #     test_file = self.TEST_FILE
-    #     cid = self.client.uploadToIPFS(test_file)
-    #     data = self.client.getFromCID(cid)
-    #     self.assertEqual(data, "Foobar")
+    def test_uploadToIPFS(self):
+        test_file = self.TEST_FILE
+        cid = self.client.uploadToIPFS(test_file)
+        data = self.client.getFromCID(cid)
+        self.assertEqual(data, "Foobar")
 
 
 
@@ -229,15 +229,15 @@ class TestAsset(SetUp):
         content = result.read().decode('utf-8')
         self.assertEqual(content, "Hello World!")
 
-    # def test_pin(self):
-    #     # Remove the asset from the pinned objects
-    #     subprocess.run(f"ipfs pin rm {self.TEST_CID}", shell=True)
+    def test_pin(self):
+        # Remove the asset from the pinned objects
+        subprocess.run(f"ipfs pin rm {self.TEST_CID}", shell=True)
 
-    #     self.asset.pin()
+        self.asset.pin()
 
-    #     # Check if the CID exists in the pinned objects
-    #     result = subprocess.run(f"ipfs pin ls | grep {self.TEST_CID}", shell=True)
-    #     self.assertEqual(result.returncode, 0)
+        # Check if the CID exists in the pinned objects
+        result = subprocess.run(f"ipfs pin ls | grep {self.TEST_CID}", shell=True)
+        self.assertEqual(result.returncode, 0)
 
     @patch('fsspec.open')
     def test_fetchNPArray(self, mock_fsspec_open): #TODO Add an image to the test data folder and remove mock.

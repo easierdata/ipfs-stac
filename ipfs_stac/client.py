@@ -1,20 +1,84 @@
+# Standard Library Imports
+import io
+import os
+from typing import List
+
+# Third Party Imports
 import fsspec
 import requests
 import pandas as pd
-import io
 from bs4 import BeautifulSoup
 from pystac_client import Client
-from array import array
+from pystac import Item
 from PIL import Image
 import numpy as np
-import os
+
+
+class Asset:
+    cid = ""
+    local_gateway = ""
+
+    def __init__(self, cid: str, local_gateway: str) -> None:
+        """
+        Constructor for asset object
+
+        :param cid str: The CID associated with the object
+        :param local_gateway str: Local gateway endpoint
+        """
+        self.cid = cid
+        self.local_gateway = local_gateway
+
+    def __str__(self) -> str:
+        return self.cid
+
+    def fetch(self) -> io.BytesIO:
+        try:
+            print(f"Fetching {self.cid.split('/')[-1]}")
+
+            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
+                file = contents.read()
+
+            data = io.BytesIO(file)
+
+            return data
+        except Exception as e:
+            print(f"Error with CID fetch: {e}")
+
+    # Pin to local kubo node
+    def pin(self) -> str: #TODO needs to use 5001 port?
+        response = requests.post(
+            f"{self.local_gateway}/api/v0/pin/add",
+            headers={"Content-Type": "application/json"},
+            json={"arg": self.cid},
+        )
+
+        if response.status_code == 200:
+            print("Data pinned successfully")
+        else:
+            print("Error pinning data")
+
+    # Returns asset as np array if image
+    def fetchNPArray(self) -> np.array:
+        try:
+            print(f"Fetching {self.cid.split('/')[-1]}")
+
+            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
+                file = contents.read()
+
+            data = io.BytesIO(file)
+
+            im = Image.open(data)
+
+            return np.array(im)
+        except Exception as e:
+            print(f"Error with CID fetch: {e}")
 
 
 class Web3:
     local_gateway = ""
     stac_endpoint = ""
 
-    def __init__(self, local_gateway=None, stac_endpoint=None):
+    def __init__(self, local_gateway=None, stac_endpoint=None) -> None:
         """
         web3 client constructor
 
@@ -25,7 +89,7 @@ class Web3:
         self.stac_endpoint = stac_endpoint
         # self.forceLocalNode() #TODO Need to re-think. It Sometimes writes 'None" to .env file during testing
 
-    def startDaemon(self):
+    def startDaemon(self) -> None:
         """
         Starts Kubo CLI Daemon
         """
@@ -34,7 +98,7 @@ class Web3:
         except Exception as e:
             print(f"Error with starting Daemon: {e}")
 
-    def getFromCID(self, cid: str):
+    def getFromCID(self, cid: str) -> str:
         """
         Retrieves raw data from CID
 
@@ -47,7 +111,7 @@ class Web3:
         except Exception as e:
             print(f"Error with CID retrieval: {e}")
 
-    def getCSVDataframeFromCID(self, cid: str):
+    def getCSVDataframeFromCID(self, cid: str) -> pd.DataFrame:
         """
         Parse CSV CID to pandas dataframe
 
@@ -68,12 +132,12 @@ class Web3:
         except Exception as e:
             print(f"Error with dataframe retrieval: {e}")
 
-    def searchSTACByBox(self, bbox: array, collections: array):
+    def searchSTACByBox(self, bbox: List["str"], collections: List["str"]): #TODO add return type
         """
         Search STAC catalog by bounding box and return array of items
 
         :param bbox array: Array of coordinates for bounding box
-        :param collections array: Array of collection names (strings)
+        :param collections array: Array of collection names
         """
         catalog = Client.open(self.stac_endpoint)
         search = catalog.search(
@@ -85,12 +149,12 @@ class Web3:
 
         return all
 
-    def searchSTACByBoxIndex(self, bbox: array, collections: array, index: int):
+    def searchSTACByBoxIndex(self, bbox: List["str"], collections: List["str"], index: int):
         """
         Search STAC catalog by bounding box and return singular item
 
         :param bbox array: Array of coordinates for bounding box
-        :param collections array: Array of collection names (strings)
+        :param collections array: Array of collection names
         :param index int: Index of item to return
         """
         catalog = Client.open(self.stac_endpoint)
@@ -103,16 +167,15 @@ class Web3:
 
         return all[index]
 
-    def getAssetFromItem(self, item, asset: str):
+    def getAssetFromItem(self, item: Item, asset_name: str) -> Asset:
         """
         Returns asset object from item
 
         :param item: STAC catalog item
-        :param asset str: Name of asset to return
         """
         try:
             item_dict = item.to_dict()
-            cid = item_dict["assets"][f"{asset}"]["alternate"]["IPFS"]["href"].split(
+            cid = item_dict["assets"][f"{asset_name}"]["alternate"]["IPFS"]["href"].split(
                 "/"
             )[-1]
 
@@ -120,7 +183,7 @@ class Web3:
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
-    def getAssetsFromItem(self, item, assets):
+    def getAssetsFromItem(self, item: Item, assets: List[str]) -> List[Asset]:
         """
         Returns array of asset objects from item
 
@@ -137,7 +200,7 @@ class Web3:
         except Exception as e:
             print(f"Error with getting assets: {e}")
 
-    def writeCID(self, cid: str, filePath: str):
+    def writeCID(self, cid: str, filePath: str) -> None:
         """
         Write CID contents to local file system (WIP)
 
@@ -152,7 +215,7 @@ class Web3:
         except Exception as e:
             print(f"Error with CID write: {e}")
 
-    def forceLocalNode(self):
+    def forceLocalNode(self) -> None:
         """
         Forces the use of local node through env file
         This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
@@ -168,12 +231,11 @@ class Web3:
                 # Write new content to the file
                 file.write(f'IPFSSPEC_GATEWAYS="{self.local_gateway}"')
 
-    def uploadToIPFS(self, file_path) -> str: #TODO Only Works if port is 5001
+    def uploadToIPFS(self, file_path: str) -> str: #TODO Only Works if port is 5001
         """
         Upload file to IPFS by local node
 
         :param str file_path: The absolute/relative path to file
-        :rtype: str
         """
         files = {"file": open(file_path, "rb")}
 
@@ -182,63 +244,3 @@ class Web3:
         return data["Hash"]  # CID
 
 
-class Asset:
-    cid = ""
-    local_gateway = ""
-
-    def __init__(self, cid: str, local_gateway: str):
-        """
-        Constructor for asset object
-
-        :param cid str: The CID associated with the object
-        :param local_gateway str: Local gateway endpoint
-        """
-        self.cid = cid
-        self.local_gateway = local_gateway
-
-    # Return cid when printed
-    def __str__(self):
-        return self.cid
-
-    # Returns asset bytes
-    def fetch(self):
-        try:
-            print(f"Fetching {self.cid.split('/')[-1]}")
-
-            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
-                file = contents.read()
-
-            data = io.BytesIO(file)
-
-            return data
-        except Exception as e:
-            print(f"Error with CID fetch: {e}")
-
-    # Pin to local kubo node
-    def pin(self): #TODO needs to use 5001 port?
-        response = requests.post(
-            f"{self.local_gateway}/api/v0/pin/add",
-            headers={"Content-Type": "application/json"},
-            json={"arg": self.cid},
-        )
-
-        if response.status_code == 200:
-            print("Data pinned successfully")
-        else:
-            print("Error pinning data")
-
-    # Returns asset as np array if image
-    def fetchNPArray(self):
-        try:
-            print(f"Fetching {self.cid.split('/')[-1]}")
-
-            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
-                file = contents.read()
-
-            data = io.BytesIO(file)
-
-            im = Image.open(data)
-
-            return np.array(im)
-        except Exception as e:
-            print(f"Error with CID fetch: {e}")
