@@ -38,7 +38,7 @@ class Web3:
             with open(".env", "w") as file:
                 # Write new content to the file
                 file.write(
-                    'IPFSSPEC_GATEWAYS="https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com",https://dweb.link"'
+                    'IPFSSPEC_GATEWAYS="http://127.0.0.1:8080,https://"https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com",https://dweb.link"'
                 )
         else:
             with open(".env", "w") as file:
