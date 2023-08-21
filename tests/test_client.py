@@ -14,13 +14,14 @@ from PIL import Image
 from ipfs_stac.client import Web3, Asset
 from .base import SetUp
 
-LOCAL_GATEWAY = "http://127.0.0.1:8080"
+LOCAL_GATEWAY = "http://127.0.0.1"
+API_PORT = 5001
 STAC_ENDPOINT = "fake_endpoint"
 
 
 class TestAsset(SetUp):
     def setUp(self):
-        self.asset = Asset(self.TEST_CID, LOCAL_GATEWAY)
+        self.asset = Asset(self.TEST_CID, LOCAL_GATEWAY, API_PORT)
 
     def test_init(self):
         self.assertEqual(self.asset.cid, self.TEST_CID)
@@ -262,4 +263,4 @@ class TestWeb3(SetUp):
         test_file = self.TEST_FILE
         cid = self.client.uploadToIPFS(test_file)
         data = self.client.getFromCID(cid)
-        self.assertEqual(data, "Foobar")
+        self.assertEqual(data, "Hello World!")

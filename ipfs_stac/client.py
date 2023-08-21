@@ -13,81 +13,37 @@ from pystac import Item
 from PIL import Image
 import numpy as np
 
-
-class Asset:
-    cid = ""
-    local_gateway = ""
-
-    def __init__(self, cid: str, local_gateway: str) -> None:
-        """
-        Constructor for asset object
-
-        :param cid str: The CID associated with the object
-        :param local_gateway str: Local gateway endpoint
-        """
-        self.cid = cid
-        self.local_gateway = local_gateway
-
-    def __str__(self) -> str:
-        return self.cid
-
-    def fetch(self) -> io.BytesIO:
-        try:
-            print(f"Fetching {self.cid.split('/')[-1]}")
-
-            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
-                file = contents.read()
-
-            data = io.BytesIO(file)
-
-            return data
-        except Exception as e:
-            print(f"Error with CID fetch: {e}")
-
-    # Pin to local kubo node
-    def pin(self) -> str: #TODO needs to use 5001 port?
-        response = requests.post(
-            f"{self.local_gateway}/api/v0/pin/add",
-            headers={"Content-Type": "application/json"},
-            json={"arg": self.cid},
-        )
-
-        if response.status_code == 200:
-            print("Data pinned successfully")
-        else:
-            print("Error pinning data")
-
-    # Returns asset as np array if image
-    def fetchNPArray(self) -> np.array:
-        try:
-            print(f"Fetching {self.cid.split('/')[-1]}")
-
-            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
-                file = contents.read()
-
-            data = io.BytesIO(file)
-
-            im = Image.open(data)
-
-            return np.array(im)
-        except Exception as e:
-            print(f"Error with CID fetch: {e}")
-
-
 class Web3:
-    local_gateway = ""
-    stac_endpoint = ""
-
-    def __init__(self, local_gateway=None, stac_endpoint=None) -> None:
+    def __init__(self, local_gateway=None, api_port=5001, stac_endpoint=None) -> None:
         """
         web3 client constructor
 
-        :param str local_gateway: Local gateway endpoint, if left blank, will not force local gateway usage
+        :param str local_gateway: Local gateway endpoint without port.
         :param str stac_endpoint: STAC browser endpoint
         """
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
-        # self.forceLocalNode() #TODO Need to re-think. It Sometimes writes 'None" to .env file during testing
+        if api_port is None:
+            raise ValueError("api_port must be set")
+        self.api_port = api_port
+        
+        # self.forceLocalNode() #TODO Try to use environment variables instead of writing to .env file
+
+    def forceLocalNode(self) -> None:
+        """
+        Forces the use of local node through env file
+        This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
+        """
+        if self.local_gateway is None:
+            with open(".env", "w") as file:
+                # Write new content to the file
+                file.write(
+                    'IPFSSPEC_GATEWAYS="https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com",https://dweb.link"'
+                )
+        else:
+            with open(".env", "w") as file:
+                # Write new content to the file
+                file.write(f'IPFSSPEC_GATEWAYS="{self.local_gateway}"')
 
     def startDaemon(self) -> None:
         """
@@ -167,7 +123,7 @@ class Web3:
 
         return all[index]
 
-    def getAssetFromItem(self, item: Item, asset_name: str) -> Asset:
+    def getAssetFromItem(self, item: Item, asset_name: str) -> 'Asset':
         """
         Returns asset object from item
 
@@ -179,11 +135,11 @@ class Web3:
                 "/"
             )[-1]
 
-            return Asset(cid, self.local_gateway)
+            return Asset(cid, self.local_gateway, self.api_port)
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
-    def getAssetsFromItem(self, item: Item, assets: List[str]) -> List[Asset]:
+    def getAssetsFromItem(self, item: Item, assets: List[str]) -> List['Asset']:
         """
         Returns array of asset objects from item
 
@@ -215,32 +171,76 @@ class Web3:
         except Exception as e:
             print(f"Error with CID write: {e}")
 
-    def forceLocalNode(self) -> None:
-        """
-        Forces the use of local node through env file
-        This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
-        """
-        if self.local_gateway == "":
-            with open(".env", "w") as file:
-                # Write new content to the file
-                file.write(
-                    'IPFSSPEC_GATEWAYS="http://127.0.0.1:8080,https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com",https://dweb.link"'
-                )
-        else:
-            with open(".env", "w") as file:
-                # Write new content to the file
-                file.write(f'IPFSSPEC_GATEWAYS="{self.local_gateway}"')
-
-    def uploadToIPFS(self, file_path: str) -> str: #TODO Only Works if port is 5001
+    # Use overrideDefault decorator to force local gateway usage
+    def uploadToIPFS(self, file_path: str) -> str:
         """
         Upload file to IPFS by local node
 
         :param str file_path: The absolute/relative path to file
         """
         files = {"file": open(file_path, "rb")}
-
-        response = requests.post(f"{self.local_gateway}/api/v0/add", files=files)
+        response = requests.post(f"{self.local_gateway}:{self.api_port}/api/v0/add", files=files)
         data = response.json()
         return data["Hash"]  # CID
 
 
+
+class Asset:
+    cid = ""
+    local_gateway = ""
+
+    def __init__(self, cid: str, local_gateway: str, api_port) -> None:
+        """
+        Constructor for asset object
+
+        :param cid str: The CID associated with the object
+        :param local_gateway str: Local gateway endpoint
+        """
+        self.cid = cid
+        self.local_gateway = local_gateway
+        self.api_port = api_port
+
+    def __str__(self) -> str:
+        return self.cid
+
+    def fetch(self) -> io.BytesIO:
+        try:
+            print(f"Fetching {self.cid.split('/')[-1]}")
+
+            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
+                file = contents.read()
+
+            data = io.BytesIO(file)
+
+            return data
+        except Exception as e:
+            print(f"Error with CID fetch: {e}")
+
+    # Pin to local kubo node
+    def pin(self) -> str:
+        response = requests.post(
+            f"{self.local_gateway}:{self.api_port}/api/v0/pin/add",
+            headers={"Content-Type": "application/json"},
+            json={"arg": self.cid},
+        )
+
+        if response.status_code == 200:
+            print("Data pinned successfully")
+        else:
+            print("Error pinning data")
+
+    # Returns asset as np array if image
+    def fetchNPArray(self) -> np.array:
+        try:
+            print(f"Fetching {self.cid.split('/')[-1]}")
+
+            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
+                file = contents.read()
+
+            data = io.BytesIO(file)
+
+            im = Image.open(data)
+
+            return np.array(im)
+        except Exception as e:
+            print(f"Error with CID fetch: {e}")
