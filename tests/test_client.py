@@ -15,14 +15,58 @@ from ipfs_stac.client import Web3, Asset
 from .base import SetUp
 
 LOCAL_GATEWAY = "http://127.0.0.1:8080"
+STAC_ENDPOINT = "fake_endpoint"
 
-class TestClient(SetUp):
+
+class TestAsset(SetUp):
     def setUp(self):
-        self.client = Web3(local_gateway=LOCAL_GATEWAY)
+        self.asset = Asset(self.TEST_CID, LOCAL_GATEWAY)
 
-    def test_getFromCID(self):
-        data = self.client.getFromCID(self.TEST_CID)
-        self.assertEqual(data, "Hello World!")
+    def test_init(self):
+        self.assertEqual(self.asset.cid, self.TEST_CID)
+        self.assertEqual(self.asset.local_gateway, LOCAL_GATEWAY)
+    
+    def test_str_representation(self):
+        self.assertEqual(str(self.asset), self.TEST_CID)
+
+    def test_fetch(self):
+        result = self.asset.fetch()
+        content = result.read().decode('utf-8')
+        self.assertEqual(content, "Hello World!")
+
+    def test_pin(self):
+        # Remove the asset from the pinned objects
+        subprocess.run(f"ipfs pin rm {self.TEST_CID}", shell=True)
+
+        self.asset.pin()
+
+        # Check if the CID exists in the pinned objects
+        result = subprocess.run(f"ipfs pin ls | grep {self.TEST_CID}", shell=True)
+        self.assertEqual(result.returncode, 0)
+
+    @patch('fsspec.open')
+    def test_fetchNPArray(self, mock_fsspec_open): #TODO Add an image to the test data folder and remove mock.
+
+        # Create an example image
+        image = Image.new("RGB", (50, 50))
+        image_bytes = io.BytesIO()
+        image.save(image_bytes, format='PNG')
+        image_bytes.seek(0)
+
+        # Mock the fsspec open method
+        mock_fsspec_open.return_value.__enter__.return_value.read.return_value = image_bytes.read()
+
+        result = self.asset.fetchNPArray()
+        self.assertEqual(result.shape, (50, 50, 3))
+        self.assertTrue(isinstance(result, np.ndarray))
+
+class TestWeb3(SetUp):
+    def setUp(self):
+        self.client = Web3(local_gateway=LOCAL_GATEWAY, stac_endpoint=STAC_ENDPOINT)
+
+    def test_init(self):
+        self.assertEqual(self.client.local_gateway, LOCAL_GATEWAY)
+        self.assertEqual(self.client.stac_endpoint, STAC_ENDPOINT)
 
     @patch('os.system')
     def test_startDaemon(self, mock_system):
@@ -34,6 +78,11 @@ class TestClient(SetUp):
 
         # Assert that the correct command was called
         mock_system.assert_called_once_with("ipfs daemon")
+
+
+    def test_getFromCID(self):
+        data = self.client.getFromCID(self.TEST_CID)
+        self.assertEqual(data, "Hello World!")
     
     @patch('requests.get')
     @patch('ipfs_stac.client.Web3.getFromCID')
@@ -120,14 +169,6 @@ class TestClient(SetUp):
         mock_open.assert_called_once_with('fake_endpoint')
         mock_catalog.search.assert_called_once_with(collections=collections, bbox=bbox)
         mock_search.item_collection.assert_called_once()
-
-
-    def test_uploadToIPFS(self):
-        test_file = self.TEST_FILE
-        cid = self.client.uploadToIPFS(test_file)
-        data = self.client.getFromCID(cid)
-        self.assertEqual(data, "Foobar")
-
 
 
     def test_getAssetFromItem(self):
@@ -217,40 +258,8 @@ class TestClient(SetUp):
             mock_file().write.assert_called_once_with(contents)
 
 
-class TestAsset(SetUp):
-    def setUp(self):
-        self.asset = Asset(self.TEST_CID, LOCAL_GATEWAY)
-    
-    def test_str_representation(self):
-        self.assertEqual(str(self.asset), self.TEST_CID)
-
-    def test_fetch(self):
-        result = self.asset.fetch()
-        content = result.read().decode('utf-8')
-        self.assertEqual(content, "Hello World!")
-
-    def test_pin(self):
-        # Remove the asset from the pinned objects
-        subprocess.run(f"ipfs pin rm {self.TEST_CID}", shell=True)
-
-        self.asset.pin()
-
-        # Check if the CID exists in the pinned objects
-        result = subprocess.run(f"ipfs pin ls | grep {self.TEST_CID}", shell=True)
-        self.assertEqual(result.returncode, 0)
-
-    @patch('fsspec.open')
-    def test_fetchNPArray(self, mock_fsspec_open): #TODO Add an image to the test data folder and remove mock.
-
-        # Create an example image
-        image = Image.new("RGB", (50, 50))
-        image_bytes = io.BytesIO()
-        image.save(image_bytes, format='PNG')
-        image_bytes.seek(0)
-
-        # Mock the fsspec open method
-        mock_fsspec_open.return_value.__enter__.return_value.read.return_value = image_bytes.read()
-
-        result = self.asset.fetchNPArray()
-        self.assertEqual(result.shape, (50, 50, 3))
-        self.assertTrue(isinstance(result, np.ndarray))
+    def test_uploadToIPFS(self):
+        test_file = self.TEST_FILE
+        cid = self.client.uploadToIPFS(test_file)
+        data = self.client.getFromCID(cid)
+        self.assertEqual(data, "Foobar")
