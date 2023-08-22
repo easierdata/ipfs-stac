@@ -219,9 +219,7 @@ class Asset:
     # Pin to local kubo node
     def pin(self) -> str:
         response = requests.post(
-            f"{self.local_gateway}:{self.api_port}/api/v0/pin/add",
-            headers={"Content-Type": "application/json"},
-            json={"arg": self.cid},
+            f"{self.local_gateway}:{self.api_port}api/v0/pin/add?arg={self.cid}",
         )
 
         if response.status_code == 200:
