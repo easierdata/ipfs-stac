@@ -21,73 +21,41 @@ STAC_ENDPOINT = "fake_endpoint"
 
 class TestAsset(SetUp):
     def setUp(self):
-        self.asset = Asset(self.TEST_CID, LOCAL_GATEWAY, API_PORT)
+        self.text_asset = Asset(self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT)
+        self.image_asset = Asset(self.IMAGE_FILE_CID, LOCAL_GATEWAY, API_PORT)
+        self.image_asset_fetched = Asset(self.IMAGE_FILE_CID, LOCAL_GATEWAY, API_PORT).fetch()
 
     def test_init(self):
-        self.assertEqual(self.asset.cid, self.TEST_CID)
-        self.assertEqual(self.asset.local_gateway, LOCAL_GATEWAY)
+        self.assertEqual(self.text_asset.cid, self.TEXT_FILE_CID)
+        self.assertEqual(self.text_asset.local_gateway, LOCAL_GATEWAY)
     
     def test_str_representation(self):
-        self.assertEqual(str(self.asset), self.TEST_CID)
+        self.assertEqual(str(self.text_asset), self.TEXT_FILE_CID)
 
     def test_fetch(self):
-        result = self.asset.fetch()
-        content = result.read().decode('utf-8')
+        asset = self.text_asset.fetch()
+        content =asset.data.read().decode('utf-8')
         self.assertEqual(content, "Hello World!")
 
     def test_pin(self):
         # Remove the asset from the pinned objects
-        subprocess.run(f"ipfs pin rm {self.TEST_CID}", shell=True)
+        subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
 
-        self.asset.pin()
+        self.text_asset.pin()
 
         # Check if the CID exists in the pinned objects
-        result = subprocess.run(f"ipfs pin ls | grep {self.TEST_CID}", shell=True)
+        result = subprocess.run(f"ipfs pin ls | grep {self.TEXT_FILE_CID}", shell=True)
         self.assertEqual(result.returncode, 0)
 
-    @patch('fsspec.open')
-    def test_fetchNPArray(self, mock_fsspec_open): #TODO Add an image to the test data folder and remove mock.
-
-        # Create an example image
-        image = Image.new("RGB", (50, 50))
-        image_bytes = io.BytesIO()
-        image.save(image_bytes, format='PNG')
-        image_bytes.seek(0)
-
-        # Mock the fsspec open method
-        mock_fsspec_open.return_value.__enter__.return_value.read.return_value = image_bytes.read()
-
-        result = self.asset.fetchNPArray()
-        self.assertEqual(result.shape, (50, 50, 3))
-        self.assertTrue(isinstance(result, np.ndarray))
-
-class TestWeb3(SetUp):
-    def setUp(self):
-        self.client = Web3(local_gateway=LOCAL_GATEWAY, stac_endpoint=STAC_ENDPOINT)
-
-    def test_init(self):
-        self.assertEqual(self.client.local_gateway, LOCAL_GATEWAY)
-        self.assertEqual(self.client.stac_endpoint, STAC_ENDPOINT)
-
-    @patch('os.system')
-    def test_startDaemon(self, mock_system):
-        # Your client class instantiation here
-        client = Web3(stac_endpoint='fake_endpoint')
-
-        # Call the function
-        client.startDaemon()
-
-        # Assert that the correct command was called
-        mock_system.assert_called_once_with("ipfs daemon")
+    def test_to_np_ndarray(self):
+        np_array = self.image_asset_fetched.to_np_ndarray()
+        self.assertIsInstance(np_array, np.ndarray)
+        self.assertEqual(np_array.shape, (50, 50))
 
 
-    def test_getFromCID(self):
-        data = self.client.getFromCID(self.TEST_CID)
-        self.assertEqual(data, "Hello World!")
-    
     @patch('requests.get')
     @patch('ipfs_stac.client.Web3.getFromCID')
-    def test_getCSVDataframeFromCID(self, mock_getFromCID, mock_get):
+    def test_to_pd_df(self, mock_getFromCID, mock_get):
         # Simulating the HTML content
         html_content = '<a href="http://example.tech/link1"></a><a href="link2"></a>'
         soup = BeautifulSoup(html_content, "html.parser")
@@ -114,6 +82,36 @@ class TestWeb3(SetUp):
         mock_getFromCID.assert_called_once_with(cid)
         mock_get.assert_called_once_with(endpoint)
 
+
+class TestWeb3(SetUp):
+    def setUp(self):
+        self.client = Web3(local_gateway=LOCAL_GATEWAY, stac_endpoint=STAC_ENDPOINT)
+
+    def test_init(self):
+        self.assertEqual(self.client.local_gateway, LOCAL_GATEWAY)
+        self.assertEqual(self.client.stac_endpoint, STAC_ENDPOINT)
+
+    @patch('os.system')
+    def test_startDaemon(self, mock_system):
+        # Your client class instantiation here
+        client = Web3(stac_endpoint='fake_endpoint')
+
+        # Call the function
+        client.startDaemon()
+
+        # Assert that the correct command was called
+        mock_system.assert_called_once_with("ipfs daemon")
+
+
+    def test_getFromCID(self):
+        data = self.client.getFromCID(self.TEXT_FILE_CID)
+        self.assertEqual(data, "Hello World!")
+
+
+    def test_getFromCID_invalid_CID(self):
+        with self.assertRaises(FileNotFoundError):
+            self.client.getFromCID("invalid_CID")
+    
 
     @patch('pystac_client.client.Client.open')
     def test_searchSTACByBox(self, mock_open):
@@ -260,7 +258,7 @@ class TestWeb3(SetUp):
 
 
     def test_uploadToIPFS(self):
-        test_file = self.TEST_FILE
+        test_file = self.TEXT_FILE
         cid = self.client.uploadToIPFS(test_file)
         data = self.client.getFromCID(cid)
         self.assertEqual(data, "Hello World!")

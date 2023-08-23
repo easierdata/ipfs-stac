@@ -2,7 +2,7 @@ from unittest import TestCase
 import requests
 import time
 import subprocess
-
+import os
 
 def start_ipfs_if_needed():
     try:
@@ -19,20 +19,16 @@ def start_ipfs_if_needed():
 
 
 class SetUp(TestCase):
-    TEST_CID = "Qmf1rtki74jvYmGeqaaV51hzeiaa6DyWc98fzDiuPatzyy"
-    TEST_FILE = "tests/data/hello.txt"
+    TEXT_FILE_CID = "Qmf1rtki74jvYmGeqaaV51hzeiaa6DyWc98fzDiuPatzyy"
+    IMAGE_FILE_CID = "QmQeQAWNJ6WXuPp3hms9qNSX5uQiSNSybYfRUqEe9PinL9"
+    TEXT_FILE = "tests/data/hello.txt"
+    IMAGE_FILE = "tests/data/image.jpg"
 
     @classmethod
     def setUpClass(cls):
         start_ipfs_if_needed()
 
-        # Check if the CID exists in the pinned objects
-        result = subprocess.run(f"ipfs pin ls | grep {cls.TEST_CID}", shell=True)
-
-        # If CID is not found, add the test file
-        if result.returncode != 0:
-            try:
-                subprocess.run(["ipfs", "add", cls.TEST_FILE], check=True)
-            except subprocess.CalledProcessError as e:
-                print(f"Failed to add test file: {e}")
-                raise Exception("Setup failed")
+        if any(not os.path.exists(path) for path in [cls.TEXT_FILE, cls.IMAGE_FILE]):
+            subprocess.run(["python3", "tests/data/create_upload_data.py"])
+            
+            

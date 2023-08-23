@@ -1,5 +1,5 @@
 # Standard Library Imports
-import io
+from io import BytesIO, StringIO
 import os
 from typing import List
 
@@ -10,9 +10,17 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from pystac_client import Client
 from pystac import Item
-from PIL import Image
 import numpy as np
+import rasterio
 
+
+def ensure_data_fetched(func):
+    def wrapper(self, *args, **kwargs):
+        if self.data is None:
+            print("Data for asset has not been fetched yet. Fetching now...")
+            self.fetch()
+        return func(self, *args, **kwargs)
+    return wrapper
 class Web3:
     def __init__(self, local_gateway=None, api_port=5001, stac_endpoint=None) -> None:
         """
@@ -68,29 +76,9 @@ class Web3:
             with fsspec.open(f"ipfs://{cid}", "r") as contents:
                 data = contents.read()
                 return data
-        except Exception as e:
-            print(f"Error with CID retrieval: {e}")
-
-    def getCSVDataframeFromCID(self, cid: str) -> pd.DataFrame:
-        """
-        Parse CSV CID to pandas dataframe
-
-        :param str cid: CID to retrieve
-        """
-        try:
-            data = self.getFromCID(cid)
-
-            # Parse for contents endpoint
-            soup = BeautifulSoup(data, "html.parser")
-            endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
-
-            response = requests.get(endpoint)
-            csv_data = io.StringIO(response.text)
-            df = pd.read_csv(csv_data)
-
-            return df
-        except Exception as e:
-            print(f"Error with dataframe retrieval: {e}")
+        except FileNotFoundError as e:
+            print(f"Could not file with CID: {cid}. Are you sure it exists?")
+            raise e
 
     def searchSTACByBox(self, bbox: List["str"], collections: List["str"]): #TODO add return type
         """
@@ -127,7 +115,7 @@ class Web3:
 
         return all[index]
 
-    def getAssetFromItem(self, item: Item, asset_name: str) -> 'Asset':
+    def getAssetFromItem(self, item: Item, asset_name: str, fetch=True) -> 'Asset':
         """
         Returns asset object from item
 
@@ -138,7 +126,8 @@ class Web3:
             cid = item_dict["assets"][f"{asset_name}"]["alternate"]["IPFS"]["href"].split(
                 "/"
             )[-1]
-
+            if fetch:
+                return Asset(cid, self.local_gateway, self.api_port)
             return Asset(cid, self.local_gateway, self.api_port)
         except Exception as e:
             print(f"Error with getting asset: {e}")
@@ -186,14 +175,32 @@ class Web3:
         response = requests.post(f"{self.local_gateway}:{self.api_port}/api/v0/add", files=files)
         data = response.json()
         return data["Hash"]  # CID
+    
 
+    def getCSVDataframeFromCID(self, cid: str) -> pd.DataFrame:
+            """
+            Parse CSV CID to pandas dataframe
+
+            :param str cid: CID to retrieve
+            """
+            try:
+                data = self.getFromCID(cid)
+
+                # Parse for contents endpoint
+                soup = BeautifulSoup(data, "html.parser")
+                endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
+
+                response = requests.get(endpoint)
+                csv_data = StringIO(response.text)
+                df = pd.read_csv(csv_data)
+
+                return df
+            except Exception as e:
+                print(f"Error with dataframe retrieval: {e}")
 
 
 class Asset:
-    cid = ""
-    local_gateway = ""
-
-    def __init__(self, cid: str, local_gateway: str, api_port) -> None:
+    def __init__(self, cid: str, local_gateway: str, api_port, fetch_data=True) -> None:
         """
         Constructor for asset object
 
@@ -203,48 +210,43 @@ class Asset:
         self.cid = cid
         self.local_gateway = local_gateway
         self.api_port = api_port
+        self.data = None
+        if fetch_data:
+            self.data = self.fetch()
 
     def __str__(self) -> str:
         return self.cid
 
-    def fetch(self) -> io.BytesIO:
+    def fetch(self) -> None:
         try:
             print(f"Fetching {self.cid.split('/')[-1]}")
 
             with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
                 file = contents.read()
 
-            data = io.BytesIO(file)
+            self.data = BytesIO(file)
+            return self
 
-            return data
         except Exception as e:
             print(f"Error with CID fetch: {e}")
 
     # Pin to local kubo node
+    @ensure_data_fetched
     def pin(self) -> str:
         response = requests.post(
-            f"{self.local_gateway}:{self.api_port}/api/v0/pin/add",
-            headers={"Content-Type": "application/json"},
-            json={"arg": self.cid},
+            f"{self.local_gateway}:{self.api_port}/api/v0/pin/add?arg={self.cid}",
         )
 
         if response.status_code == 200:
             print("Data pinned successfully")
+            
         else:
             print("Error pinning data")
 
     # Returns asset as np array if image
-    def fetchNPArray(self) -> np.array:
-        try:
-            print(f"Fetching {self.cid.split('/')[-1]}")
+    @ensure_data_fetched
+    def to_np_ndarray(self, dtype: np.dtype = np.float32) -> np.ndarray:
+        with rasterio.open(self.data) as dataset:
+            return dataset.read(1).astype(dtype)
+        
 
-            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
-                file = contents.read()
-
-            data = io.BytesIO(file)
-
-            im = Image.open(data)
-
-            return np.array(im)
-        except Exception as e:
-            print(f"Error with CID fetch: {e}")
