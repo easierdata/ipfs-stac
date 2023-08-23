@@ -176,6 +176,22 @@ class Web3:
         data = response.json()
         return data["Hash"]  # CID
     
+    def pinned_list(self) -> List[str]:
+        """
+        Returns array of pinned CIDs
+        """
+
+        response = requests.post(
+            f"{self.local_gateway}:{self.api_port}/api/v0/pin/ls",
+        )
+
+        if response.status_code == 200:
+            if response.json() != {}:
+                return list(response.json()["Keys"].keys())
+            else:
+                return []
+        else:
+            print("Error fetching pinned CIDs")
 
     def getCSVDataframeFromCID(self, cid: str) -> pd.DataFrame:
             """
