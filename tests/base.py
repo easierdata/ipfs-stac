@@ -21,14 +21,14 @@ def start_ipfs_if_needed():
 class SetUp(TestCase):
     TEXT_FILE_CID = "Qmf1rtki74jvYmGeqaaV51hzeiaa6DyWc98fzDiuPatzyy"
     IMAGE_FILE_CID = "QmQeQAWNJ6WXuPp3hms9qNSX5uQiSNSybYfRUqEe9PinL9"
-    TEXT_FILE = "tests/data/hello.txt"
-    IMAGE_FILE = "tests/data/image.jpg"
+    TEXT_FILE_PATH = "tests/data/hello.txt"
+    IMAGE_FILE_PATH = "tests/data/image.jpg"
 
     @classmethod
     def setUpClass(cls):
         start_ipfs_if_needed()
 
-        if any(not os.path.exists(path) for path in [cls.TEXT_FILE, cls.IMAGE_FILE]):
+        if any(not os.path.exists(path) for path in [cls.TEXT_FILE_PATH, cls.IMAGE_FILE_PATH]):
             subprocess.run(["python3", "tests/data/create_upload_data.py"])
             
             

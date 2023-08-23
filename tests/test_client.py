@@ -18,71 +18,6 @@ LOCAL_GATEWAY = "http://127.0.0.1"
 API_PORT = 5001
 STAC_ENDPOINT = "fake_endpoint"
 
-
-class TestAsset(SetUp):
-    def setUp(self):
-        self.text_asset = Asset(self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT)
-        self.image_asset = Asset(self.IMAGE_FILE_CID, LOCAL_GATEWAY, API_PORT)
-        self.image_asset_fetched = Asset(self.IMAGE_FILE_CID, LOCAL_GATEWAY, API_PORT).fetch()
-
-    def test_init(self):
-        self.assertEqual(self.text_asset.cid, self.TEXT_FILE_CID)
-        self.assertEqual(self.text_asset.local_gateway, LOCAL_GATEWAY)
-    
-    def test_str_representation(self):
-        self.assertEqual(str(self.text_asset), self.TEXT_FILE_CID)
-
-    def test_fetch(self):
-        asset = self.text_asset.fetch()
-        content =asset.data.read().decode('utf-8')
-        self.assertEqual(content, "Hello World!")
-
-    def test_pin(self):
-        # Remove the asset from the pinned objects
-        subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
-
-        self.text_asset.pin()
-
-        # Check if the CID exists in the pinned objects
-        result = subprocess.run(f"ipfs pin ls | grep {self.TEXT_FILE_CID}", shell=True)
-        self.assertEqual(result.returncode, 0)
-
-    def test_to_np_ndarray(self):
-        np_array = self.image_asset_fetched.to_np_ndarray()
-        self.assertIsInstance(np_array, np.ndarray)
-        self.assertEqual(np_array.shape, (50, 50))
-
-
-    @patch('requests.get')
-    @patch('ipfs_stac.client.Web3.getFromCID')
-    def test_to_pd_df(self, mock_getFromCID, mock_get):
-        # Simulating the HTML content
-        html_content = '<a href="http://example.tech/link1"></a><a href="link2"></a>'
-        soup = BeautifulSoup(html_content, "html.parser")
-        endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
-        # Simulating the CSV response
-        csv_response = Mock()
-        csv_response.text = 'column1,column2\nvalue1,value2'
-        mock_get.return_value = csv_response
-        # Simulating the HTML content returned from CID
-        mock_getFromCID.return_value = html_content
-
-        # Your client class instantiation here
-        client = Web3(stac_endpoint='fake_endpoint')
-
-        # Call the function
-        cid = 'fake_cid'
-        df = client.getCSVDataframeFromCID(cid)
-
-        # Assert that the correct dataframe was returned
-        expected_df = pd.read_csv(io.StringIO(csv_response.text))
-        pd.testing.assert_frame_equal(df, expected_df)
-
-        # Additional assertions to check that the correct functions were called
-        mock_getFromCID.assert_called_once_with(cid)
-        mock_get.assert_called_once_with(endpoint)
-
-
 class TestWeb3(SetUp):
     def setUp(self):
         self.client = Web3(local_gateway=LOCAL_GATEWAY, stac_endpoint=STAC_ENDPOINT)
@@ -258,7 +193,71 @@ class TestWeb3(SetUp):
 
 
     def test_uploadToIPFS(self):
-        test_file = self.TEXT_FILE
-        cid = self.client.uploadToIPFS(test_file)
+        subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
+        cid = self.client.uploadToIPFS(self.TEXT_FILE_PATH)
         data = self.client.getFromCID(cid)
         self.assertEqual(data, "Hello World!")
+class TestAsset(SetUp):
+    def setUp(self):
+        self.text_asset = Asset(self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT)
+        self.image_asset = Asset(self.IMAGE_FILE_CID, LOCAL_GATEWAY, API_PORT)
+        self.image_asset_fetched = Asset(self.IMAGE_FILE_CID, LOCAL_GATEWAY, API_PORT).fetch()
+
+    def test_init(self):
+        self.assertEqual(self.text_asset.cid, self.TEXT_FILE_CID)
+        self.assertEqual(self.text_asset.local_gateway, LOCAL_GATEWAY)
+    
+    def test_str_representation(self):
+        self.assertEqual(str(self.text_asset), self.TEXT_FILE_CID)
+
+    def test_fetch(self):
+        asset = self.text_asset.fetch()
+        content =asset.data.read().decode('utf-8')
+        self.assertEqual(content, "Hello World!")
+
+    def test_pin(self):
+        # Remove the asset from the pinned objects
+        subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
+
+        self.text_asset.pin()
+
+        # Check if the CID exists in the pinned objects
+        result = subprocess.run(f"ipfs pin ls | grep {self.TEXT_FILE_CID}", shell=True)
+        self.assertEqual(result.returncode, 0)
+
+    def test_to_np_ndarray(self):
+        np_array = self.image_asset_fetched.to_np_ndarray()
+        self.assertIsInstance(np_array, np.ndarray)
+        self.assertEqual(np_array.shape, (50, 50))
+
+
+    @patch('requests.get')
+    @patch('ipfs_stac.client.Web3.getFromCID')
+    def test_to_pd_df(self, mock_getFromCID, mock_get):
+        # Simulating the HTML content
+        html_content = '<a href="http://example.tech/link1"></a><a href="link2"></a>'
+        soup = BeautifulSoup(html_content, "html.parser")
+        endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
+        # Simulating the CSV response
+        csv_response = Mock()
+        csv_response.text = 'column1,column2\nvalue1,value2'
+        mock_get.return_value = csv_response
+        # Simulating the HTML content returned from CID
+        mock_getFromCID.return_value = html_content
+
+        # Your client class instantiation here
+        client = Web3(stac_endpoint='fake_endpoint')
+
+        # Call the function
+        cid = 'fake_cid'
+        df = client.getCSVDataframeFromCID(cid)
+
+        # Assert that the correct dataframe was returned
+        expected_df = pd.read_csv(io.StringIO(csv_response.text))
+        pd.testing.assert_frame_equal(df, expected_df)
+
+        # Additional assertions to check that the correct functions were called
+        mock_getFromCID.assert_called_once_with(cid)
+        mock_get.assert_called_once_with(endpoint)
+
+
