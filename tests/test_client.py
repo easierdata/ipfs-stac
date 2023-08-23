@@ -261,3 +261,8 @@ class TestAsset(SetUp):
         mock_get.assert_called_once_with(endpoint)
 
 
+    def test_to_NPArray(self):
+        np_array = self.image_asset_fetched.to_np_ndarray()
+        self.assertIsInstance(np_array, np.ndarray)
+
+
