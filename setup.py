@@ -3,11 +3,11 @@ from setuptools import find_packages, setup
 setup(
     name='ipfs_stac',
     packages=find_packages(include=['ipfs_stac']),
-    version='0.1.8',
+    version='0.1.9',
     description='The EASIER Data Initiative Python IPFS-STAC Client',
     author='The EASIER Data Initiative',
     license='MIT',
-    install_requires=['ipfsspec', 'fsspec', 'requests', 'pandas', 'beautifulsoup4', 'pystac-client', 'Pillow', 'numpy'],
+    install_requires=['ipfsspec', 'fsspec', 'requests', 'pandas', 'beautifulsoup4', 'pystac-client', 'Pillow', 'numpy', 'rasterio'],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     test_suite='tests',

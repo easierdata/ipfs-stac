@@ -92,8 +92,7 @@ print(band) # QmNddx9BvBsQMXgwp6a83D2wiLrmovgCpRKVYKSJoWNNbx
 # You can fetch the asset bytes through the fetch method
 data = band.fetch()
 
-# Alternatively, you can fetch the asset as an np array
-asset_array = band.fetchNPArray()
+# Alternatively, you can fetch the asset as an np array with the to_np_ndarray method
 ```
 
 # Attributions
