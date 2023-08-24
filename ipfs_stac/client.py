@@ -1,6 +1,7 @@
 # Standard Library Imports
 from io import BytesIO, StringIO
-import os
+import subprocess
+import time
 from typing import List
 
 # Third Party Imports
@@ -21,6 +22,7 @@ def ensure_data_fetched(func):
             self.fetch()
         return func(self, *args, **kwargs)
     return wrapper
+
 class Web3:
     def __init__(self, local_gateway=None, api_port=5001, stac_endpoint=None) -> None:
         """
@@ -31,9 +33,13 @@ class Web3:
         """
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
+
         if api_port is None:
             raise ValueError("api_port must be set")
         self.api_port = api_port
+
+        if self.local_gateway != None:
+            self.startDaemon()
         
         # self.forceLocalNode() #TODO Try to use environment variables instead of writing to .env file
         # os.environ["IPFSSPEC_GATEWAYS"] = """
@@ -62,9 +68,16 @@ class Web3:
         Starts Kubo CLI Daemon
         """
         try:
-            os.system("ipfs daemon")
-        except Exception as e:
-            print(f"Error with starting Daemon: {e}")
+            requests.get(f"http://{self.local_gateway}:{self.api_port}/")
+        except requests.exceptions.ConnectionError:
+            subprocess.Popen(["ipfs", "daemon"])
+
+            time.sleep(5)
+
+            try:
+                requests.get(f"http://{self.local_gateway}:{self.api_port}/")
+            except requests.exceptions.ConnectionError:
+                raise Exception("Failed to start IPFS daemon")
 
     def getFromCID(self, cid: str) -> str:
         """
