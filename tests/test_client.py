@@ -197,6 +197,13 @@ class TestWeb3(SetUp):
         cid = self.client.uploadToIPFS(self.TEXT_FILE_PATH)
         data = self.client.getFromCID(cid)
         self.assertEqual(data, "Hello World!")
+
+    def test_pinned_list(self):
+        subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
+        self.client.uploadToIPFS(self.TEXT_FILE_PATH)
+        pinned_list = self.client.pinned_list()
+        self.assertIn(self.TEXT_FILE_CID, pinned_list)
+        
 class TestAsset(SetUp):
     def setUp(self):
         self.text_asset = Asset(self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT)
