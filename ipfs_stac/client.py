@@ -1,5 +1,6 @@
 # Standard Library Imports
 from io import BytesIO, StringIO
+import os
 import subprocess
 import time
 from typing import List
@@ -50,15 +51,9 @@ class Web3:
         This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
         """
         if self.local_gateway is None:
-            with open(".env", "w") as file:
-                # Write new content to the file
-                file.write(
-                    'IPFSSPEC_GATEWAYS="http://127.0.0.1:8080,https://"https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com",https://dweb.link"'
-                ) # TODO: The local gateway needs api_port
+            os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="http://{self.local_gateway}:{self.api_port},https://"https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com",https://dweb.link"'
         else:
-            with open(".env", "w") as file:
-                # Write new content to the file
-                file.write(f'IPFSSPEC_GATEWAYS="{self.local_gateway}"') # TODO: This needs api_port
+            os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="{self.local_gateway}"'
 
     #TODO: Use this function to try to start the daemon in the background if the user provides a local gateway and it is not running.
     # If the daemon is already running, this function will not do anything. If we cannot access the IPFS node even after trying to start it,
