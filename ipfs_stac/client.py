@@ -25,7 +25,7 @@ def ensure_data_fetched(func):
     return wrapper
 
 class Web3:
-    def __init__(self, local_gateway=None, api_port=5001, stac_endpoint=None) -> None:
+    def __init__(self, local_gateway=None, api_port=5001, stac_endpoint=None, remote_gateways=None) -> None:
         """
         web3 client constructor
 
@@ -41,6 +41,9 @@ class Web3:
 
         if self.local_gateway != None:
             self.startDaemon()
+
+        # Remote_gateways is of type List[str]
+        os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="http://{self.local_gateway}:{self.api_port},https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com,https://dweb.link",{remote_gateways.join(",")}'
         
         # self.forceLocalNode() #TODO Try to use environment variables instead of writing to .env file
         # os.environ["IPFSSPEC_GATEWAYS"] = """
@@ -51,7 +54,7 @@ class Web3:
         This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
         """
         if self.local_gateway is None:
-            os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="http://{self.local_gateway}:{self.api_port},https://"https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com",https://dweb.link"'
+            os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="http://{self.local_gateway}:{self.api_port},https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com,https://dweb.link"'
         else:
             os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="{self.local_gateway}"'
 
