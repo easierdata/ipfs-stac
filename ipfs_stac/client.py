@@ -39,7 +39,7 @@ class Web3:
             raise ValueError("api_port must be set")
         self.api_port = api_port
 
-        if self.local_gateway != None:
+        if self.local_gateway:
             self.startDaemon()
         
         # self.forceLocalNode() #TODO Try to use environment variables instead of writing to .env file
@@ -123,7 +123,7 @@ class Web3:
 
         return all[index]
 
-    def getAssetFromItem(self, item: Item, asset_name: str, fetch=True) -> 'Asset':
+    def getAssetFromItem(self, item: Item, asset_name: str, fetch_data=True) -> 'Asset':
         """
         Returns asset object from item
 
@@ -134,9 +134,7 @@ class Web3:
             cid = item_dict["assets"][f"{asset_name}"]["alternate"]["IPFS"]["href"].split(
                 "/"
             )[-1]
-            if fetch:
-                return Asset(cid, self.local_gateway, self.api_port)
-            return Asset(cid, self.local_gateway, self.api_port)
+            return Asset(cid, self.local_gateway, self.api_port, fetch_data=fetch_data)
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
@@ -180,7 +178,7 @@ class Web3:
         :param str file_path: The absolute/relative path to file
         """
         files = {"file": open(file_path, "rb")}
-        response = requests.post(f"{self.local_gateway}:{self.api_port}/api/v0/add", files=files)
+        response = requests.post(f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files)
         data = response.json()
         return data["Hash"]  # CID
     
@@ -190,7 +188,7 @@ class Web3:
         """
 
         response = requests.post(
-            f"{self.local_gateway}:{self.api_port}/api/v0/pin/ls",
+            f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/ls",
         )
 
         if response.status_code == 200:
@@ -236,7 +234,7 @@ class Asset:
         self.api_port = api_port
         self.data = None
         if fetch_data:
-            self.data = self.fetch()
+            self.fetch()
 
     def __str__(self) -> str:
         return self.cid
@@ -247,9 +245,7 @@ class Asset:
 
             with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
                 file = contents.read()
-
             self.data = BytesIO(file)
-            return self
 
         except Exception as e:
             print(f"Error with CID fetch: {e}")
@@ -258,7 +254,7 @@ class Asset:
     @ensure_data_fetched
     def pin(self) -> str:
         response = requests.post(
-            f"{self.local_gateway}:{self.api_port}/api/v0/pin/add?arg={self.cid}",
+            f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/add?arg={self.cid}",
         )
 
         if response.status_code == 200:
