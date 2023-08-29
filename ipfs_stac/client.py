@@ -149,7 +149,7 @@ class Web3:
             assetArray = []
 
             for i in assets:
-                assetArray.append(self.getAssetFromItem(item, i))
+                assetArray.append(self.getAssetFromItem(item, i, fetch_data=False))
 
             return assetArray
         except Exception as e:
