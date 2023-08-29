@@ -43,7 +43,7 @@ class Web3:
             self.startDaemon()
 
         # Remote_gateways is of type List[str]
-        if remote_gateways is not None:
+        if remote_gateways:
             os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="http://{self.local_gateway}:{self.api_port},https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com,https://dweb.link",{remote_gateways.join(",")}'
         
         # self.forceLocalNode() #TODO Try to use environment variables instead of writing to .env file
