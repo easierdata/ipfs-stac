@@ -8,6 +8,7 @@ import numpy as np
 from pystac import Item
 from bs4 import BeautifulSoup
 import pandas as pd
+from PIL import Image
 
 ## Local Imports
 from ipfs_stac.client import Web3, Asset
@@ -56,9 +57,15 @@ class TestWeb3(SetUp):
         self.assertEqual(self.client.stac_endpoint, STAC_ENDPOINT)
 
 
-    def test_getFromCID(self):
+    def test_getFromCID_text(self):
         data = self.client.getFromCID(self.TEXT_FILE_CID)
-        self.assertEqual(data, "Hello World!")
+        data_str = data.decode('utf-8')
+        self.assertEqual(data_str, "Hello World!")
+
+    def test_getFromCID_image(self):
+        data = self.client.getFromCID(self.IMAGE_FILE_CID)
+        image = Image.open(io.BytesIO(data))
+        self.assertEqual(image.size, (50, 50))
 
 
     def test_getFromCID_invalid_CID(self):
@@ -210,11 +217,19 @@ class TestWeb3(SetUp):
             mock_file().write.assert_called_once_with(contents)
 
 
-    def test_uploadToIPFS(self):
-        subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
+    def test_uploadToIPFS_file_path(self):
         cid = self.client.uploadToIPFS(self.TEXT_FILE_PATH)
         data = self.client.getFromCID(cid)
-        self.assertEqual(data, "Hello World!")
+        data_str = data.decode('utf-8')
+        self.assertEqual(data_str, "Hello World!")
+
+    def test_uploadToIPFS_bytes(self):
+        with open(self.TEXT_FILE_PATH, "rb") as f:
+            bytes = f.read()
+        cid = self.client.uploadToIPFS(bytes_data=bytes)
+        data = self.client.getFromCID(cid)
+        data_str = data.decode('utf-8')
+        self.assertEqual(data_str, "Hello World!")
 
     def test_pinned_list(self):
         subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
