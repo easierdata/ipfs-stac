@@ -7,7 +7,7 @@ setup(
     description='The EASIER Data Initiative Python IPFS-STAC Client',
     author='The EASIER Data Initiative',
     license='MIT',
-    install_requires=['ipfsspec', 'fsspec', 'requests', 'pandas', 'beautifulsoup4', 'pystac-client', 'Pillow', 'numpy', 'rasterio'],
+    install_requires=['ipfsspec', 'fsspec', 'requests', 'pandas', 'beautifulsoup4', 'pystac-client', 'Pillow', 'numpy', 'rasterio', 'yaspin'],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     test_suite='tests',
