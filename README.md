@@ -27,16 +27,16 @@ The client currently supports Python versions 3+
 ```python
 from ipfs_stac import client
 
-# Create a new client object
-easier = client.web3(local_gateway="", stac_endpoint="")
+# Create a new client object without a local node (uses remote gateways)
+easier = client.Web3(stac_endpoint="<my_stac_server>/api/v1/pgstac/")
 
-# If you want to force using a local node, specify the endpoint in the local_gateway argument
-easier = client.web3(local_gateway="http://127.0.0.1:8000", stac_endpoint="")
+# If you want to use your local IPFS node (preferred), specify the endpoint in the local_gateway argument
+easier = client.Web3(local_gateway="127.0.0.1", stac_endpoint="<my_stac_server>/api/v1/pgstac/")
 ```
 
 ### Fetch a CID from IPFS
 
-```python
+```py
 # Simple hello world example
 data = easier.getFromCID("QmZ4tDuvesekSs4qM5ZBKpXiZGun7S2CYtEZRB3DYXkjGx")
 print(data)
@@ -48,7 +48,7 @@ hello worlds
 
 ### Get CID CSV Data to Pandas Dataframe
 
-```python
+```py
 df = easier.getCSVDataframeFromCID("bafybeifw6kcodgxnamtuvhkxgaf4ep2rwscjae3gnzxb3zj5c6zyea2nri")
 print(f"Data frame length: {len(df)}")
 
@@ -60,13 +60,14 @@ Data frame length: 3510
 ### Query STAC API By Bounding Box
 
 ```python
-easier = client.web3(local_gateway="", stac="<YOUR STAC ENDPOINT GOES HERE>")
+easier = client.Web3(local_gateway="", stac="<YOUR STAC ENDPOINT GOES HERE>")
 """
 Retrieve all items from STAC catalog that are in bounding box with searchSTACByBox method (2 arguments)
 1. Coordinates of bounding box
 2. Name(s) of STAC collections)
 """
-items = easier.searchSTACByBox([-76.964657, 38.978967, -76.928008, 39.002783], ["<STAC COLLECTION GOES HERE>"])
+# Use any collection name you want. This is just an example
+items = easier.searchSTACByBox([-76.964657, 38.978967, -76.928008, 39.002783], "landsat-c2l1") 
 
 """
 The searchSTACByBoxIndex by method takes 3 arguments
@@ -74,10 +75,11 @@ The searchSTACByBoxIndex by method takes 3 arguments
 2. Name of the STAC collection to query
 3. Index of the item you want to retrieve
 """
-item = easier.searchSTACByBoxIndex([-76.964657, 38.978967, -76.928008, 39.002783], ["<STAC COLLECTION GOES HERE>"], 0)
-band = easier.getAssetFromItem(item, 'ASSET NAME GOES HERE') # Returns asset object
+item = easier.searchSTACByBoxIndex([-76.964657, 38.978967, -76.928008, 39.002783], "landsat-c2l1", 0)
+# In this example, 'nir08' is the name of the band (asset) we want to retrieve from a landsat item
+band = easier.getAssetFromItem(item, 'nir08')
 
-# Optionally, you can fetch multiple assets by the getBandsFromItem Method
+# Optionally, you can fetch multiple assets by the getAssetsFromItem Method
 bands = easier.getAssetsFromItem(item, ["blue", "red"]) # Returns array of assets
 ```
 
@@ -89,10 +91,19 @@ bands = easier.getAssetsFromItem(item, ["blue", "red"]) # Returns array of asset
 # The asset object, when printed, will return the CID
 print(band) # QmNddx9BvBsQMXgwp6a83D2wiLrmovgCpRKVYKSJoWNNbx
 
-# You can fetch the asset bytes through the fetch method
-data = band.fetch()
+# The asset content (bytes) can be found in asset.data. If this is None, you can call the fetch method to retrieve the data.
+band.fetch()
+print(band.data) # b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x...
 
-# Alternatively, you can fetch the asset as an np array with the to_np_ndarray method
+# Alternatively, you can also transform the asset data in different formats such as a numpy array
+band_np = band.to_np_ndarray()
+print(band_np) # [[0. 0. 0. ... 0. 0. 0.]
+               #  [0. 0. 0. ... 0. 0. 0.]
+               #  [0. 0. 0. ... 0. 0. 0.]
+               #  ...
+               #  [0. 0. 0. ... 0. 0. 0.]
+               #  [0. 0. 0. ... 0. 0. 0.]
+               #  [0. 0. 0. ... 0. 0. 0.]]
 ```
 
 # Attributions
