@@ -14,6 +14,7 @@ from pystac_client import Client
 from pystac import Item
 import numpy as np
 import rasterio
+from yaspin import yaspin
 
 
 def ensure_data_fetched(func):
@@ -253,12 +254,24 @@ class Asset:
 
     def fetch(self) -> None:
         try:
-            print(f"Fetching {self.cid.split('/')[-1]}")
+            fs = fsspec.filesystem("ipfs")
+            progress = 0
 
-            with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
-                file = contents.read()
-            self.data = BytesIO(file)
+            with yaspin(text=f"Fetching {self.cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{self.cid}')} bytes", color="yellow") as spinner:
+                with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
+                    while True:
+                        chunk = contents.read(8192)
+                        progress += len(chunk)
+                        if not chunk:
+                            break
+                        spinner.text = f"Fetching {self.cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{self.cid}')} bytes"
+                    file = contents.read()
 
+                self.data = BytesIO(file)
+                if self.data:
+                    spinner.ok("✅ ")
+                else:
+                    spinner.fail("💥 ")
         except Exception as e:
             print(f"Error with CID fetch: {e}")
 
