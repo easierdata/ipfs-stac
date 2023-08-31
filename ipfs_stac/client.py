@@ -247,10 +247,18 @@ class Asset:
     def fetch(self) -> None:
         try:
             fs = fsspec.filesystem("ipfs")
+            progress = 0
 
-            with yaspin(text=f"Fetching {self.cid.split('/')[-1]} - {fs.size(f'ipfs://{self.cid}')} bytes", color="yellow") as spinner:
+            with yaspin(text=f"Fetching {self.cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{self.cid}')} bytes", color="yellow") as spinner:
                 with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
+                    while True:
+                        chunk = contents.read(8192)
+                        progress += len(chunk)
+                        if not chunk:
+                            break
+                        spinner.text = f"Fetching {self.cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{self.cid}')} bytes"
                     file = contents.read()
+
                 self.data = BytesIO(file)
                 if self.data:
                     spinner.ok("✅ ")
