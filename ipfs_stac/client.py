@@ -79,14 +79,14 @@ class Web3:
             except requests.exceptions.ConnectionError:
                 raise Exception("Failed to start IPFS daemon")
 
-    def getFromCID(self, cid: str) -> str:
+    def getFromCID(self, cid: str) -> bytes:
         """
         Retrieves raw data from CID
 
         :param str cid: CID to retrieve
         """
         try:
-            with fsspec.open(f"ipfs://{cid}", "r") as contents:
+            with fsspec.open(f"ipfs://{cid}", "rb") as contents:
                 data = contents.read()
                 return data
         except FileNotFoundError as e:
@@ -176,14 +176,22 @@ class Web3:
             print(f"Error with CID write: {e}")
 
     # Use overrideDefault decorator to force local gateway usage
-    def uploadToIPFS(self, file_path: str) -> str:
+    def uploadToIPFS(self, file_path: str=None, bytes_data=None) -> str:
         """
         Upload file to IPFS by local node
 
         :param str file_path: The absolute/relative path to file
+        :param bytes bytes_data: The bytes data to upload
         """
-        files = {"file": open(file_path, "rb")}
-        response = requests.post(f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files)
+        if file_path:
+            files = {"file": open(file_path, "rb")}
+            response = requests.post(f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files)
+        elif bytes_data:
+            files = {"file": ("file", bytes_data)}
+            response = requests.post(f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files)
+        else:
+            raise ValueError("Either file_path or bytes_data must be provided.")
+
         data = response.json()
         return data["Hash"]  # CID
     
