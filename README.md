@@ -12,7 +12,7 @@
 
 The client can be installed through pip
 
-```bash
+```shell
 $ pip install ipfs-stac
 ```
 
@@ -59,8 +59,8 @@ Data frame length: 3510
 
 ### Query STAC API By Bounding Box
 
-```python
-easier = client.Web3(local_gateway="", stac="<YOUR STAC ENDPOINT GOES HERE>")
+```py
+easier = client.Web3(local_gateway="127.0.0.1", stac="<my_stac_server>/api/v1/pgstac/")
 """
 Retrieve all items from STAC catalog that are in bounding box with searchSTACByBox method (2 arguments)
 1. Coordinates of bounding box
@@ -83,9 +83,9 @@ band = easier.getAssetFromItem(item, 'nir08')
 bands = easier.getAssetsFromItem(item, ["blue", "red"]) # Returns array of assets
 ```
 
-### The asset object
+### The Asset Object
 
-```python
+```py
 # This snippet extends the previous under "Query STAC API By Bounding Box"
 
 # The asset object, when printed, will return the CID
