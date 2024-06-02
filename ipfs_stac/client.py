@@ -4,6 +4,7 @@ import os
 import subprocess
 import time
 from typing import List
+import warnings
 
 # Third Party Imports
 import fsspec
@@ -15,7 +16,6 @@ from pystac import Item
 import numpy as np
 import rasterio
 from yaspin import yaspin
-
 
 def ensure_data_fetched(func):
     def wrapper(self, *args, **kwargs):
@@ -46,9 +46,6 @@ class Web3:
         # Remote_gateways is of type List[str]
         if remote_gateways:
             os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="http://{self.local_gateway}:{self.api_port},https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com,https://dweb.link",{remote_gateways.join(",")}'
-        
-        # self.forceLocalNode() #TODO Try to use environment variables instead of writing to .env file
-        # os.environ["IPFSSPEC_GATEWAYS"] = """
 
     def forceLocalNode(self) -> None:
         """
@@ -60,16 +57,14 @@ class Web3:
         else:
             os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="{self.local_gateway}"'
 
-    #TODO: Use this function to try to start the daemon in the background if the user provides a local gateway and it is not running.
-    # If the daemon is already running, this function will not do anything. If we cannot access the IPFS node even after trying to start it,
-    # we should log a warning and continue with an external gateway.
     def startDaemon(self) -> None: 
         """
-        Starts Kubo CLI Daemon
+        Starts Kubo CLI Daemon if not already running
         """
         try:
             requests.get(f"http://{self.local_gateway}:{self.api_port}/")
         except requests.exceptions.ConnectionError:
+            warnings.warn("IPFS Daemon is not running... Attempting to launch")
             subprocess.Popen(["ipfs", "daemon"])
 
             time.sleep(5)
@@ -213,25 +208,25 @@ class Web3:
             print("Error fetching pinned CIDs")
 
     def getCSVDataframeFromCID(self, cid: str) -> pd.DataFrame:
-            """
-            Parse CSV CID to pandas dataframe
+        """
+        Parse CSV CID to pandas dataframe
 
-            :param str cid: CID to retrieve
-            """
-            try:
-                data = self.getFromCID(cid)
+        :param str cid: CID to retrieve
+        """
+        try:
+            data = self.getFromCID(cid)
 
-                # Parse for contents endpoint
-                soup = BeautifulSoup(data, "html.parser")
-                endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
+            # Parse for contents endpoint
+            soup = BeautifulSoup(data, "html.parser")
+            endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
 
-                response = requests.get(endpoint)
-                csv_data = StringIO(response.text)
-                df = pd.read_csv(csv_data)
+            response = requests.get(endpoint)
+            csv_data = StringIO(response.text)
+            df = pd.read_csv(csv_data)
 
-                return df
-            except Exception as e:
-                print(f"Error with dataframe retrieval: {e}")
+            return df
+        except Exception as e:
+            print(f"Error with dataframe retrieval: {e}")
 
 
 class Asset:
@@ -293,5 +288,4 @@ class Asset:
     def to_np_ndarray(self, dtype: np.dtype = np.float32) -> np.ndarray:
         with rasterio.open(self.data) as dataset:
             return dataset.read(1).astype(dtype)
-        
 
