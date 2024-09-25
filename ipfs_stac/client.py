@@ -100,22 +100,21 @@ class Web3:
                 f'IPFSSPEC_GATEWAYS="{self.local_gateway}"'
             )
 
-    def startDaemon(self) -> None: 
+    def startDaemon(self) -> None:
         """
         Starts Kubo CLI Daemon if not already running
         """
+        _process = subprocess.Popen(["ipfs", "daemon"])
         try:
-            requests.get(f"http://{self.local_gateway}:{self.api_port}/")
+            heartbeat_response = requests.post(
+                f"http://{self.local_gateway}:{self.api_port}/api/v0/id"
+            )
+            if heartbeat_response.status_code != 200:
+                warnings.warn(
+                    "IPFS Daemon is running but still can't connect. Check your IPFS configuration."
+                )
         except requests.exceptions.ConnectionError:
-            warnings.warn("IPFS Daemon is not running... Attempting to launch")
-            subprocess.Popen(["ipfs", "daemon"])
-
-            time.sleep(5)
-
-            try:
-                requests.get(f"http://{self.local_gateway}:{self.api_port}/")
-            except requests.exceptions.ConnectionError:
-                raise Exception("Failed to start IPFS daemon")
+            raise Exception("Failed to start IPFS daemon")
 
     def getFromCID(self, cid: str) -> bytes:
         """
