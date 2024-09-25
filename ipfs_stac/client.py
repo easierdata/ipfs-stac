@@ -79,7 +79,7 @@ class Web3:
 
         # # Add default remote gateways
         # for gateway in REMOTE_GATEWAYS:
-        #     os.environ[ENV_VAR_NAME] = os.environ[ENV_VAR_NAME] + ":" + gateway
+        #     os.environ[ENV_VAR_NAME] = os.environ[ENV_VAR_NAME] + os.pathsep  + gateway
 
         # # Extend additional remote gateways to the environment variable
         # if remote_gateways:
