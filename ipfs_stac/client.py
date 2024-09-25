@@ -283,11 +283,26 @@ class Asset:
         self.local_gateway = local_gateway
         self.api_port = api_port
         self.data = None
-        if fetch_data:
+        is_pinned = self._is_pinned_to_local_node()
+        if fetch_data and not is_pinned:
             self.fetch()
 
     def __str__(self) -> str:
         return self.cid
+
+    def _is_pinned_to_local_node(self) -> bool:
+        """
+        Check if CID is pinned to local node
+        """
+        resp = requests.post(
+            f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/ls?arg=/ipfs/{self.cid}",
+        )
+        if resp.status_code != 200:
+            raise Exception("Error checking if CID is pinned")
+        elif self.cid in resp.json()["Keys"]:
+            return True
+        else:
+            return False
 
     def fetch(self) -> None:
         try:
