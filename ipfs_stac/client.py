@@ -329,14 +329,13 @@ class Asset:
 
     # Pin to local kubo node
     @ensure_data_fetched
-    def pin(self) -> str:
-        response = requests.post(
-            f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/add?arg={self.cid}",
-        )
+    def pin(self, name=None) -> str:
+        url = f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/add?arg={self.cid}" if name is None else f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/add?arg={self.cid}&name={name}"
+
+        response = requests.post(url)
 
         if response.status_code == 200:
             print("Data pinned successfully")
-            
         else:
             print("Error pinning data")
 
