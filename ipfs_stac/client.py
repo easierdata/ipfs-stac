@@ -77,13 +77,13 @@ class Web3:
                 f"http://{self.local_gateway}:{self.gateway_port}"
             )
 
-        # Add default remote gateways
-        for gateway in REMOTE_GATEWAYS:
-            os.environ[ENV_VAR_NAME] = os.environ[ENV_VAR_NAME] + ":" + gateway
+        # # Add default remote gateways
+        # for gateway in REMOTE_GATEWAYS:
+        #     os.environ[ENV_VAR_NAME] = os.environ[ENV_VAR_NAME] + ":" + gateway
 
-        # Extend additional remote gateways to the environment variable
-        if remote_gateways:
-            os.environ[ENV_VAR_NAME] += os.pathsep + remote_gateways
+        # # Extend additional remote gateways to the environment variable
+        # if remote_gateways:
+        #     os.environ[ENV_VAR_NAME] += os.pathsep + remote_gateways
 
 
     def forceLocalNode(self) -> None:
