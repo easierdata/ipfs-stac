@@ -17,6 +17,7 @@ from .base import SetUp
 LOCAL_GATEWAY = "127.0.0.1"
 API_PORT = 5001
 STAC_ENDPOINT = "fake_endpoint"
+GATEWAY_PORT = 8081
 
 
 @patch('requests.get')
@@ -50,7 +51,7 @@ def test_to_pd_df(mock_getFromCID, mock_get):
 
 class TestWeb3(SetUp):
     def setUp(self):
-        self.client = Web3(local_gateway=LOCAL_GATEWAY, stac_endpoint=STAC_ENDPOINT)
+        self.client = Web3(local_gateway=LOCAL_GATEWAY, stac_endpoint=STAC_ENDPOINT, gateway_port=GATEWAY_PORT)
 
     def test_init(self):
         self.assertEqual(self.client.local_gateway, LOCAL_GATEWAY)

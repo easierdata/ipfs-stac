@@ -12,10 +12,11 @@ from .base import SetUp
 LOCAL_GATEWAY = "127.0.0.1"
 API_PORT = 5001
 STAC_ENDPOINT = "http://ec2-54-172-212-55.compute-1.amazonaws.com/api/v1/pgstac/"
+GATEWAY_PORT = 8081
 
 class TestIntegration(SetUp):
     def setUp(self):
-        self.client = Web3(local_gateway=LOCAL_GATEWAY, stac_endpoint=STAC_ENDPOINT)
+        self.client = Web3(local_gateway=LOCAL_GATEWAY, stac_endpoint=STAC_ENDPOINT, gateway_port=GATEWAY_PORT)
         # Colosseum, Rome, Italy
         self.bbox = [12.490827, 41.889249, 12.494162, 41.891876]
 

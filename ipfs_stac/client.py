@@ -17,16 +17,35 @@ import numpy as np
 import rasterio
 from yaspin import yaspin
 
+
+# Global Variables
+ENV_VAR_NAME = "IPFS_GATEWAY"
+REMOTE_GATEWAYS = [
+    "https://ipfs.io",
+    "https://cloudflare-ipfs.com",
+    "https://dweb.link",
+]
+
+
 def ensure_data_fetched(func):
     def wrapper(self, *args, **kwargs):
         if self.data is None:
             print("Data for asset has not been fetched yet. Fetching now...")
             self.fetch()
         return func(self, *args, **kwargs)
+
     return wrapper
 
+
 class Web3:
-    def __init__(self, local_gateway=None, api_port=5001, stac_endpoint=None, remote_gateways=None) -> None:
+    def __init__(
+        self,
+        local_gateway='127.0.0.1',
+        api_port=5001,
+        gateway_port=8080,
+        stac_endpoint=None,
+        remote_gateways=None,
+    ) -> None:
         """
         web3 client constructor
 
@@ -38,14 +57,34 @@ class Web3:
 
         if api_port is None:
             raise ValueError("api_port must be set")
+
+        if gateway_port is None:
+            raise ValueError("gateway_port must be set")
+
         self.api_port = api_port
+        self.gateway_port = gateway_port
 
         if self.local_gateway:
             self.startDaemon()
 
-        # Remote_gateways is of type List[str]
-        if remote_gateways:
-            os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="http://{self.local_gateway}:{self.api_port},https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com,https://dweb.link",{remote_gateways.join(",")}'
+        # Check if the remote gateway env variable already exists
+        if ENV_VAR_NAME in os.environ:
+            os.environ[ENV_VAR_NAME] += (
+                os.pathsep + f"http://{self.local_gateway}:{self.gateway_port}"
+            )
+        else:
+            os.environ[ENV_VAR_NAME] = (
+                f"http://{self.local_gateway}:{self.gateway_port}"
+            )
+
+        # # Add default remote gateways
+        # for gateway in REMOTE_GATEWAYS:
+        #     os.environ[ENV_VAR_NAME] = os.environ[ENV_VAR_NAME] + os.pathsep  + gateway
+
+        # # Extend additional remote gateways to the environment variable
+        # if remote_gateways:
+        #     os.environ[ENV_VAR_NAME] += os.pathsep + remote_gateways
+
 
     def forceLocalNode(self) -> None:
         """
@@ -53,26 +92,29 @@ class Web3:
         This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
         """
         if self.local_gateway is None:
-            os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="http://{self.local_gateway}:{self.api_port},https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com,https://dweb.link"'
+            os.environ["ENV_VAR_NAME"] = (
+                f'ENV_VAR_NAME="http://{self.local_gateway}:{self.api_port},https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com,https://dweb.link"'
+            )
         else:
-            os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="{self.local_gateway}"'
+            os.environ["IPFSSPEC_GATEWAYS"] = (
+                f'IPFSSPEC_GATEWAYS="{self.local_gateway}"'
+            )
 
-    def startDaemon(self) -> None: 
+    def startDaemon(self) -> None:
         """
         Starts Kubo CLI Daemon if not already running
         """
+        _process = subprocess.Popen(["ipfs", "daemon"])
         try:
-            requests.get(f"http://{self.local_gateway}:{self.api_port}/")
+            heartbeat_response = requests.post(
+                f"http://{self.local_gateway}:{self.api_port}/api/v0/id"
+            )
+            if heartbeat_response.status_code != 200:
+                warnings.warn(
+                    "IPFS Daemon is running but still can't connect. Check your IPFS configuration."
+                )
         except requests.exceptions.ConnectionError:
-            warnings.warn("IPFS Daemon is not running... Attempting to launch")
-            subprocess.Popen(["ipfs", "daemon"])
-
-            time.sleep(5)
-
-            try:
-                requests.get(f"http://{self.local_gateway}:{self.api_port}/")
-            except requests.exceptions.ConnectionError:
-                raise Exception("Failed to start IPFS daemon")
+            raise Exception("Failed to start IPFS daemon")
 
     def getFromCID(self, cid: str) -> bytes:
         """
