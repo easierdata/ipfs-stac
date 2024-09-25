@@ -17,16 +17,29 @@ import numpy as np
 import rasterio
 from yaspin import yaspin
 
+
+# Global Variables
+ENV_VAR_NAME = "IPFS_GATEWAY"
+
 def ensure_data_fetched(func):
     def wrapper(self, *args, **kwargs):
         if self.data is None:
             print("Data for asset has not been fetched yet. Fetching now...")
             self.fetch()
         return func(self, *args, **kwargs)
+
     return wrapper
 
+
 class Web3:
-    def __init__(self, local_gateway=None, api_port=5001, stac_endpoint=None, remote_gateways=None) -> None:
+    def __init__(
+        self,
+        local_gateway=None,
+        api_port=5001,
+        gateway_port=8080,
+        stac_endpoint=None,
+        remote_gateways=None,
+    ) -> None:
         """
         web3 client constructor
 
@@ -38,14 +51,25 @@ class Web3:
 
         if api_port is None:
             raise ValueError("api_port must be set")
+
+        if gateway_port is None:
+            raise ValueError("gateway_port must be set")
+
         self.api_port = api_port
+        self.gateway_port = gateway_port
 
         if self.local_gateway:
             self.startDaemon()
 
-        # Remote_gateways is of type List[str]
-        if remote_gateways:
-            os.environ["IPFSSPEC_GATEWAYS"] = f'IPFSSPEC_GATEWAYS="http://{self.local_gateway}:{self.api_port},https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com,https://dweb.link",{remote_gateways.join(",")}'
+        # Check if the remote gateway env variable already exists
+        if ENV_VAR_NAME in os.environ:
+            os.environ[ENV_VAR_NAME] += (
+                os.pathsep + f"http://{self.local_gateway}:{self.gateway_port}"
+            )
+        else:
+            os.environ[ENV_VAR_NAME] = (
+                f"http://{self.local_gateway}:{self.gateway_port}"
+            )
 
     def forceLocalNode(self) -> None:
         """
