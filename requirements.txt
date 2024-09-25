@@ -54,6 +54,7 @@ requests-toolbelt==1.0.0
 rfc3986==2.0.0
 rich==13.4.2
 rpds-py==0.8.8
+s3fs==2024.9.0
 six==1.16.0
 snuggs==1.4.7
 soupsieve==2.4.1
