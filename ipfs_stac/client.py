@@ -165,7 +165,7 @@ class Web3:
 
         return all[index]
 
-    def getAssetFromItem(self, item: Item, asset_name: str, fetch_data=True) -> 'Asset':
+    def getAssetFromItem(self, item: Item, asset_name: str, fetch_data=False) -> 'Asset':
         """
         Returns asset object from item
 
@@ -272,7 +272,7 @@ class Web3:
 
 
 class Asset:
-    def __init__(self, cid: str, local_gateway: str, api_port, fetch_data=True) -> None:
+    def __init__(self, cid: str, local_gateway: str, api_port, fetch_data=False) -> None:
         """
         Constructor for asset object
 
