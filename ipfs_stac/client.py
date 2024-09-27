@@ -40,7 +40,7 @@ def ensure_data_fetched(func):
 class Web3:
     def __init__(
         self,
-        local_gateway='127.0.0.1',
+        local_gateway="127.0.0.1",
         api_port=5001,
         gateway_port=8080,
         stac_endpoint=None,
@@ -84,7 +84,6 @@ class Web3:
         # # Extend additional remote gateways to the environment variable
         # if remote_gateways:
         #     os.environ[ENV_VAR_NAME] += os.pathsep + remote_gateways
-
 
     def forceLocalNode(self) -> None:
         """
@@ -130,7 +129,9 @@ class Web3:
             print(f"Could not file with CID: {cid}. Are you sure it exists?")
             raise e
 
-    def searchSTACByBox(self, bbox: List["str"], collections: List["str"]): #TODO add return type
+    def searchSTACByBox(
+        self, bbox: List["str"], collections: List["str"]
+    ):  # TODO add return type
         """
         Search STAC catalog by bounding box and return array of items
 
@@ -147,7 +148,9 @@ class Web3:
 
         return all
 
-    def searchSTACByBoxIndex(self, bbox: List["str"], collections: List["str"], index: int):
+    def searchSTACByBoxIndex(
+        self, bbox: List["str"], collections: List["str"], index: int
+    ):
         """
         Search STAC catalog by bounding box and return singular item
 
@@ -165,7 +168,9 @@ class Web3:
 
         return all[index]
 
-    def getAssetFromItem(self, item: Item, asset_name: str, fetch_data=False) -> 'Asset':
+    def getAssetFromItem(
+        self, item: Item, asset_name: str, fetch_data=False
+    ) -> "Asset":
         """
         Returns asset object from item
 
@@ -173,14 +178,14 @@ class Web3:
         """
         try:
             item_dict = item.to_dict()
-            cid = item_dict["assets"][f"{asset_name}"]["alternate"]["IPFS"]["href"].split(
-                "/"
-            )[-1]
+            cid = item_dict["assets"][f"{asset_name}"]["alternate"]["IPFS"][
+                "href"
+            ].split("/")[-1]
             return Asset(cid, self.local_gateway, self.api_port, fetch_data=fetch_data)
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
-    def getAssetsFromItem(self, item: Item, assets: List[str]) -> List['Asset']:
+    def getAssetsFromItem(self, item: Item, assets: List[str]) -> List["Asset"]:
         """
         Returns array of asset objects from item
 
@@ -213,7 +218,7 @@ class Web3:
             print(f"Error with CID write: {e}")
 
     # Use overrideDefault decorator to force local gateway usage
-    def uploadToIPFS(self, file_path: str=None, bytes_data=None) -> str:
+    def uploadToIPFS(self, file_path: str = None, bytes_data=None) -> str:
         """
         Upload file to IPFS by local node
 
@@ -222,16 +227,20 @@ class Web3:
         """
         if file_path:
             files = {"file": open(file_path, "rb")}
-            response = requests.post(f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files)
+            response = requests.post(
+                f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files
+            )
         elif bytes_data:
             files = {"file": ("file", bytes_data)}
-            response = requests.post(f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files)
+            response = requests.post(
+                f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files
+            )
         else:
             raise ValueError("Either file_path or bytes_data must be provided.")
 
         data = response.json()
         return data["Hash"]  # CID
-    
+
     def pinned_list(self) -> List[str]:
         """
         Returns array of pinned CIDs
@@ -272,7 +281,9 @@ class Web3:
 
 
 class Asset:
-    def __init__(self, cid: str, local_gateway: str, api_port, fetch_data=False) -> None:
+    def __init__(
+        self, cid: str, local_gateway: str, api_port, fetch_data=False
+    ) -> None:
         """
         Constructor for asset object
 
@@ -283,9 +294,10 @@ class Asset:
         self.local_gateway = local_gateway
         self.api_port = api_port
         self.data = None
-        is_pinned = self._is_pinned_to_local_node()
-        if fetch_data and not is_pinned:
-            self.fetch()
+        self.is_pinned = False
+        if fetch_data:
+            if not self._is_pinned_to_local_node():
+                self.fetch()
 
     def __str__(self) -> str:
         return self.cid
@@ -297,11 +309,16 @@ class Asset:
         resp = requests.post(
             f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/ls?arg=/ipfs/{self.cid}",
         )
-        if resp.status_code != 200:
-            raise Exception("Error checking if CID is pinned")
-        elif self.cid in resp.json()["Keys"]:
+        if (resp.json().get("Keys")) and self.cid in resp.json()["Keys"]:
+            self.is_pinned = True
             return True
+        elif resp.json()["Type"] == "error":
+            self.is_pinned = False
+            return False
         else:
+            print("Error checking if CID is pinned")
+            print(resp.json())
+            self.is_pinned = False
             return False
 
     def fetch(self) -> None:
@@ -309,7 +326,10 @@ class Asset:
             fs = fsspec.filesystem("ipfs")
             progress = 0
 
-            with yaspin(text=f"Fetching {self.cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{self.cid}')} bytes", color="yellow") as spinner:
+            with yaspin(
+                text=f"Fetching {self.cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{self.cid}')} bytes",
+                color="yellow",
+            ) as spinner:
                 with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
                     while True:
                         chunk = contents.read(8192)
@@ -336,13 +356,14 @@ class Asset:
 
         if response.status_code == 200:
             print("Data pinned successfully")
-            
+            self.is_pinned = True
+
         else:
             print("Error pinning data")
+            self.is_pinned = False
 
     # Returns asset as np array if image
     @ensure_data_fetched
     def to_np_ndarray(self, dtype: np.dtype = np.float32) -> np.ndarray:
         with rasterio.open(self.data) as dataset:
             return dataset.read(1).astype(dtype)
-
