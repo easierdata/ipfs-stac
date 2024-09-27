@@ -54,6 +54,7 @@ class Web3:
         """
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
+        self._process = None
 
         if api_port is None:
             raise ValueError("api_port must be set")
@@ -103,8 +104,34 @@ class Web3:
         """
         Starts Kubo CLI Daemon if not already running
         """
-        _process = subprocess.Popen(["ipfs", "daemon"])
+
+        def is_process_running(process_name):
+            import psutil
+
+            # Iterate over all running processes
+            for proc in psutil.process_iter(["name"]):
+                try:
+                    # Check if process name contains the given name string.
+                    if process_name.lower() in proc.info["name"].lower():
+                        return True
+                except ( psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass
+            return False
+
+        def shutdown_process():
+            if self._process:
+                self._process.terminate()  # or self._process.kill() if terminate is not enough
+                self._process = None
+
         try:
+            # Check if 'ipfs daemon' is already running
+            if not is_process_running("ipfs"):
+                import subprocess
+                import atexit
+
+                self._process = subprocess.Popen(["ipfs", "daemon"])
+                atexit.register(shutdown_process)  # Register the shutdown function
+
             heartbeat_response = requests.post(
                 f"http://{self.local_gateway}:{self.api_port}/api/v0/id"
             )
