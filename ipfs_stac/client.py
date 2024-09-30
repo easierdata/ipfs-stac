@@ -137,7 +137,7 @@ class Web3:
                     file_data = bytearray()
 
                     while True:
-                        chunk = contents.read(8192)
+                        chunk = contents.read()
                         progress += len(chunk)
                         if not chunk:
                             break
@@ -363,7 +363,7 @@ class Asset:
                     file_data = bytearray()
 
                     while True:
-                        chunk = contents.read(8192)
+                        chunk = contents.read()
                         progress += len(chunk)
                         if not chunk:
                             break
