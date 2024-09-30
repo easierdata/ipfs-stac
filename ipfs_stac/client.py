@@ -44,7 +44,6 @@ class Web3:
         api_port=5001,
         gateway_port=8080,
         stac_endpoint=None,
-        remote_gateways=None,
     ) -> None:
         """
         web3 client constructor
@@ -78,26 +77,17 @@ class Web3:
                 f"http://{self.local_gateway}:{self.gateway_port}"
             )
 
-        # # Add default remote gateways
-        # for gateway in REMOTE_GATEWAYS:
-        #     os.environ[ENV_VAR_NAME] = os.environ[ENV_VAR_NAME] + os.pathsep  + gateway
-
-        # # Extend additional remote gateways to the environment variable
-        # if remote_gateways:
-        #     os.environ[ENV_VAR_NAME] += os.pathsep + remote_gateways
-
     def forceLocalNode(self) -> None:
         """
         Forces the use of local node through env file
-        This function needs to be refactored slightly -> currently overwrites .env file which is unideal if user has other variables configured
         """
         if self.local_gateway is None:
             os.environ["ENV_VAR_NAME"] = (
-                f'ENV_VAR_NAME="http://{self.local_gateway}:{self.api_port},https://ipfs.io,https://gateway.pinata.cloud,https://cloudflare-ipfs.com,https://dweb.link"'
+                f'ENV_VAR_NAME="https://dweb.link"'
             )
         else:
-            os.environ["IPFSSPEC_GATEWAYS"] = (
-                f'IPFSSPEC_GATEWAYS="{self.local_gateway}"'
+            os.environ["IPFS_GATEWAY"] = (
+                f'IPFS_GATEWAY="{self.local_gateway}:{self.gateway_port}"'
             )
 
     def startDaemon(self) -> None:
