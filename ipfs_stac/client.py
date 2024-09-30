@@ -26,7 +26,6 @@ REMOTE_GATEWAYS = [
     "https://dweb.link",
 ]
 
-
 def ensure_data_fetched(func):
     def wrapper(self, *args, **kwargs):
         if self.data is None:
@@ -36,6 +35,40 @@ def ensure_data_fetched(func):
 
     return wrapper
 
+def fetchCID(cid: str) -> bytes:
+    """
+    Fetches data from CID
+
+    :param str cid: CID to retrieve
+    """
+    try:
+        fs = fsspec.filesystem("ipfs")
+        progress = 0
+
+        with yaspin(
+            text=f"Fetching {cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{cid}')} bytes",
+            color="yellow",
+        ) as spinner:
+            with fsspec.open(f"ipfs://{cid}", "rb") as contents:
+                file_data = bytearray()
+
+                while True:
+                    chunk = contents.read()
+                    progress += len(chunk)
+                    if not chunk:
+                        break
+                    file_data.extend(chunk)
+                    spinner.text = f"Fetching {cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{cid}')} bytes"
+
+            if file_data:
+                spinner.ok("✅ ")
+            else:
+                spinner.fail("💥 ")
+            
+            return bytes(file_data)
+    except FileNotFoundError as e:
+        print(f"Could not file with CID: {cid}. Are you sure it exists?")
+        raise e
 
 class Web3:
     def __init__(
@@ -126,9 +159,7 @@ class Web3:
         :param str cid: CID to retrieve
         """
         try:
-            with fsspec.open(f"ipfs://{cid}", "rb") as contents:
-                data = contents.read()
-                return data
+            return fetchCID(cid)
         except FileNotFoundError as e:
             print(f"Could not file with CID: {cid}. Are you sure it exists?")
             raise e
@@ -297,7 +328,7 @@ class Asset:
         self.cid = cid
         self.local_gateway = local_gateway
         self.api_port = api_port
-        self.data = None
+        self.data: bytes = None
         self.is_pinned = False
         if fetch_data:
             if not self._is_pinned_to_local_node():
@@ -327,27 +358,7 @@ class Asset:
 
     def fetch(self) -> None:
         try:
-            fs = fsspec.filesystem("ipfs")
-            progress = 0
-
-            with yaspin(
-                text=f"Fetching {self.cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{self.cid}')} bytes",
-                color="yellow",
-            ) as spinner:
-                with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
-                    while True:
-                        chunk = contents.read(8192)
-                        progress += len(chunk)
-                        if not chunk:
-                            break
-                        spinner.text = f"Fetching {self.cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{self.cid}')} bytes"
-                    file = contents.read()
-
-                self.data = BytesIO(file)
-                if self.data:
-                    spinner.ok("✅ ")
-                else:
-                    spinner.fail("💥 ")
+            self.data = fetchCID(self.cid)
         except Exception as e:
             print(f"Error with CID fetch: {e}")
 
