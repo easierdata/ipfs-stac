@@ -77,19 +77,6 @@ class Web3:
                 f"http://{self.local_gateway}:{self.gateway_port}"
             )
 
-    def forceLocalNode(self) -> None:
-        """
-        Forces the use of local node through env file
-        """
-        if self.local_gateway is None:
-            os.environ["ENV_VAR_NAME"] = (
-                f'ENV_VAR_NAME="https://dweb.link"'
-            )
-        else:
-            os.environ["IPFS_GATEWAY"] = (
-                f'IPFS_GATEWAY="{self.local_gateway}:{self.gateway_port}"'
-            )
-
     def startDaemon(self) -> None:
         """
         Starts Kubo CLI Daemon if not already running
