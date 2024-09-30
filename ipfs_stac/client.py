@@ -145,7 +145,7 @@ class Web3:
                         spinner.text = f"Fetching {cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{cid}')} bytes"
                     # file = contents.read()
 
-                if self.data:
+                if file_data:
                     spinner.ok("✅ ")
                 else:
                     spinner.fail("💥 ")
