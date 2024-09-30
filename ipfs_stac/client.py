@@ -126,9 +126,34 @@ class Web3:
         :param str cid: CID to retrieve
         """
         try:
-            with fsspec.open(f"ipfs://{cid}", "rb") as contents:
-                data = contents.read()
-                return data
+            fs = fsspec.filesystem("ipfs")
+            progress = 0
+
+            with yaspin(
+                text=f"Fetching {cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{cid}')} bytes",
+                color="yellow",
+            ) as spinner:
+                with fsspec.open(f"ipfs://{cid}", "rb") as contents:
+                    file_data = bytearray()
+
+                    while True:
+                        chunk = contents.read(8192)
+                        progress += len(chunk)
+                        if not chunk:
+                            break
+                        file_data.extend(chunk)
+                        spinner.text = f"Fetching {cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{cid}')} bytes"
+                    # file = contents.read()
+
+                if self.data:
+                    spinner.ok("✅ ")
+                else:
+                    spinner.fail("💥 ")
+                
+                return bytes(file_data)
+            # with fsspec.open(f"ipfs://{cid}", "rb") as contents:
+            #     data = contents.read()
+            #     return data
         except FileNotFoundError as e:
             print(f"Could not file with CID: {cid}. Are you sure it exists?")
             raise e
@@ -297,7 +322,7 @@ class Asset:
         self.cid = cid
         self.local_gateway = local_gateway
         self.api_port = api_port
-        self.data = None
+        self.data: bytes = None
         self.is_pinned = False
         if fetch_data:
             if not self._is_pinned_to_local_node():
@@ -335,15 +360,18 @@ class Asset:
                 color="yellow",
             ) as spinner:
                 with fsspec.open(f"ipfs://{self.cid}", "rb") as contents:
+                    file_data = bytearray()
+
                     while True:
                         chunk = contents.read(8192)
                         progress += len(chunk)
                         if not chunk:
                             break
+                        file_data.extend(chunk)
                         spinner.text = f"Fetching {self.cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{self.cid}')} bytes"
-                    file = contents.read()
+                    # file = contents.read()
 
-                self.data = BytesIO(file)
+                self.data = bytes(file_data)
                 if self.data:
                     spinner.ok("✅ ")
                 else:
