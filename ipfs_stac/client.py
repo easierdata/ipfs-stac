@@ -11,8 +11,8 @@ import fsspec
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
-from pystac_client import Client
-from pystac import Item
+from pystac_client import Client, ItemSearch
+from pystac import Item, ItemCollection
 import numpy as np
 import rasterio
 from yaspin import yaspin
@@ -166,7 +166,7 @@ class Web3:
 
     def searchSTACByBox(
         self, bbox: List["str"], collections: List["str"]
-    ):  # TODO add return type
+    ) -> ItemCollection:
         """
         Search STAC catalog by bounding box and return array of items
 
@@ -182,6 +182,59 @@ class Web3:
         all = search.item_collection()
 
         return all
+    
+    def searchWithItemSearch(
+        self, 
+        method: str = "POST",
+        max_items: int = None,
+        stac_io: bool = None,
+        collections = None,
+        bbox = None, 
+        interesects = None,
+        datetime = None,
+        query = None,
+        limit: int = None,
+        sortby = None,
+        fields = None,
+    ) -> ItemCollection:
+        """
+        Search STAC catalog using ItemSearch from pystac-client.
+
+        :param method: HTTP method to use for the request (default is "POST").
+        :param max_items: Maximum number of items to retrieve (optional).
+        :param stac_io: STAC I/O instance to override the default I/O (optional).
+        :param collections: List of collection names to search (optional).
+        :param bbox: Bounding box coordinates to filter (optional).
+        :param interesects: GeoJSON geometry used to filter results by spatial intersection (optional).
+        :param datetime: Temporal filter by date (optional).
+        :param query: Query parameters to filter items based on their attributes (optional).
+        :param limit: Limit the number of items returned by the search (optional).
+        :param sortby: Sorting criteria for the results (optional).
+        :param fields: A dictionary specifying the fields to include or exclude in the results (optional).
+        :return: A pystac ItemCollection with the search results.
+        """
+        try:
+            search = ItemSearch(
+                self.stac_endpoint,
+                method=method,
+                max_items=max_items,
+                stac_io=stac_io,
+                collections=collections,
+                bbox=bbox,
+                intersects=interesects,
+                datetime=datetime,
+                query=query,
+                limit=limit,
+                sortby=sortby,
+                fields=fields
+            )
+
+            results = search.get_all_items()
+            return results
+        except Exception as e:
+            print(f"Error during search with ItemSearch: {e}")
+            return None
+
 
     def searchSTACByBoxIndex(
         self, bbox: List["str"], collections: List["str"], index: int
