@@ -25,6 +25,7 @@ REMOTE_GATEWAYS = [
     "https://dweb.link",
 ]
 
+
 def ensure_data_fetched(func):
     def wrapper(self, *args, **kwargs):
         if self.data is None:
@@ -33,6 +34,7 @@ def ensure_data_fetched(func):
         return func(self, *args, **kwargs)
 
     return wrapper
+
 
 def fetchCID(cid: str) -> bytes:
     """
@@ -63,11 +65,12 @@ def fetchCID(cid: str) -> bytes:
                 spinner.ok("✅ ")
             else:
                 spinner.fail("💥 ")
-            
+
             return bytes(file_data)
     except FileNotFoundError as e:
         print(f"Could not file with CID: {cid}. Are you sure it exists?")
         raise e
+
 
 class Web3:
     def __init__(
@@ -112,7 +115,7 @@ class Web3:
 
         # Load configuration at instantiation
         config_path = os.path.join(os.path.dirname(__file__), "config.json")
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             self.config = json.load(f)
 
     def startDaemon(self) -> None:
@@ -129,7 +132,11 @@ class Web3:
                     # Check if process name contains the given name string.
                     if process_name.lower() in proc.info["name"].lower():
                         return True
-                except ( psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                except (
+                    psutil.NoSuchProcess,
+                    psutil.AccessDenied,
+                    psutil.ZombieProcess,
+                ):
                     pass
             return False
 
@@ -187,59 +194,35 @@ class Web3:
         all = search.item_collection()
 
         return all
-    
-    def searchWithItemSearch(
-        self, 
-        method: str = "POST",
-        max_items: int = None,
-        stac_io: bool = None,
-        collections = None,
-        bbox = None, 
-        interesects = None,
-        datetime = None,
-        query = None,
-        limit: int = None,
-        sortby = None,
-        fields = None,
-    ) -> ItemCollection:
-        """
-        Search STAC catalog using ItemSearch from pystac-client.
 
-        :param method: HTTP method to use for the request (default is "POST").
-        :param max_items: Maximum number of items to retrieve (optional).
-        :param stac_io: STAC I/O instance to override the default I/O (optional).
-        :param collections: List of collection names to search (optional).
-        :param bbox: Bounding box coordinates to filter (optional).
-        :param interesects: GeoJSON geometry used to filter results by spatial intersection (optional).
-        :param datetime: Temporal filter by date (optional).
-        :param query: Query parameters to filter items based on their attributes (optional).
-        :param limit: Limit the number of items returned by the search (optional).
-        :param sortby: Sorting criteria for the results (optional).
-        :param fields: A dictionary specifying the fields to include or exclude in the results (optional).
-        :return: A pystac ItemCollection with the search results.
+    def searchSTAC(self, **kwargs) -> List[Item]:
+        """
+        Search STAC catalog for items using the search method from pystac-client.
+
+        Note: No request is sent to the API until a method is called to iterate
+        through the resulting STAC Items, either :meth:`ItemSearch.item_collections`,
+        :meth:`ItemSearch.items`, or :meth:`ItemSearch.items_as_dicts`.
+
+        :param kwargs: Keyword arguments for the search method.
+        :return: list of pystac.Item objects
         """
         try:
-            search = ItemSearch(
-                self.stac_endpoint,
-                method=method,
-                max_items=max_items,
-                stac_io=stac_io,
-                collections=collections,
-                bbox=bbox,
-                intersects=interesects,
-                datetime=datetime,
-                query=query,
-                limit=limit,
-                sortby=sortby,
-                fields=fields
-            )
+            search_results = self.client.search(**kwargs)
+            # Grab all the items each each result page.
+            items_from_search = list()
+            for page in search_results.pages():
+                for item in page:
+                    items_from_search.append(item)
 
-            results = search.get_all_items()
-            return results
+            return items_from_search
+
         except Exception as e:
-            print(f"Error during search with ItemSearch: {e}")
-            return None
-
+            # Print the error message and the keyword argument that caused the error.
+            if isinstance(e, TypeError):
+                print(f"Error: {e}")
+                print(f"Search method docstring: {self.client.search.__doc__}")
+            else:
+                print(f"Error: {e}")
 
     def searchSTACByBoxIndex(
         self, bbox: List["str"], collections: List["str"], index: int
