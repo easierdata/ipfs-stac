@@ -86,6 +86,7 @@ class Web3:
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
         self._process = None
+        self.client: Client = Client.open(self.stac_endpoint)
 
         if api_port is None:
             raise ValueError("api_port must be set")
