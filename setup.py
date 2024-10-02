@@ -3,6 +3,9 @@ from setuptools import find_packages, setup
 setup(
     name='ipfs_stac',
     packages=find_packages(include=['ipfs_stac']),
+    package_data={
+        'ipfs_stac': ['config.json']
+    },
     version='0.1.12',
     description='The EASIER Data Initiative Python IPFS-STAC Client',
     author='The EASIER Data Initiative',
