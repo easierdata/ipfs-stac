@@ -1,8 +1,7 @@
 # Standard Library Imports
-from io import BytesIO, StringIO
+from io import StringIO
 import os
-import subprocess
-import time
+import json
 from typing import List
 import warnings
 
@@ -109,6 +108,11 @@ class Web3:
             os.environ[ENV_VAR_NAME] = (
                 f"http://{self.local_gateway}:{self.gateway_port}"
             )
+
+        # Load configuration at instantiation
+        config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        with open(config_path, 'r') as f:
+            self.config = json.load(f)
 
     def startDaemon(self) -> None:
         """
