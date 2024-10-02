@@ -10,8 +10,8 @@ import fsspec
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
-from pystac_client import Client, ItemSearch
-from pystac import Item, ItemCollection
+from pystac_client import Client
+from pystac import Collection, Item, ItemCollection
 import numpy as np
 import rasterio
 from yaspin import yaspin
@@ -90,6 +90,7 @@ class Web3:
         self.stac_endpoint = stac_endpoint
         self._process = None
         self.client: Client = Client.open(self.stac_endpoint)
+        self.collections = self._get_collections_ids()
 
         if api_port is None:
             raise ValueError("api_port must be set")
@@ -117,6 +118,12 @@ class Web3:
         config_path = os.path.join(os.path.dirname(__file__), "config.json")
         with open(config_path, "r") as f:
             self.config = json.load(f)
+
+    def _get_collections_ids(self) -> List[str]:
+        """
+        Get the collection ids from the stac endpoint
+        """
+        return [collection.id for collection in self.client.get_collections()]
 
     def startDaemon(self) -> None:
         """
