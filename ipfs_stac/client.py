@@ -70,7 +70,6 @@ def fetchCID(cid: str) -> bytes:
         print(f"Could not file with CID: {cid}. Are you sure it exists?")
         raise e
 
-
 class Web3:
     def __init__(
         self,
@@ -117,6 +116,24 @@ class Web3:
         config_path = os.path.join(os.path.dirname(__file__), "config.json")
         with open(config_path, "r") as f:
             self.config = json.load(f)
+
+    def overwrite_config(self, path=None) -> None:
+        """
+        *only use if you know what you're doing*
+        Overwrite configuration file with configuration in memory
+
+        :param str path: Path to configuration file (optional)
+        """
+
+        # Get user's home directory
+        home = os.path.expanduser("~")
+        if path:
+            config_path = path
+        else:
+            config_path = os.path.join(home, ".ipfs", "config")
+
+        with open(config_path, "w") as f:
+            json.dump(self.config, f)
 
     def _get_collections_ids(self) -> List[str]:
         """
