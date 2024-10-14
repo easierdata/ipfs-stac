@@ -35,6 +35,7 @@ class Web3:
         """
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
+        self.mfs_folder_path = None
 
         if api_port is None:
             raise ValueError("api_port must be set")
@@ -134,7 +135,7 @@ class Web3:
             cid = item_dict["assets"][f"{asset_name}"]["alternate"]["IPFS"]["href"].split(
                 "/"
             )[-1]
-            return Asset(cid, self.local_gateway, self.api_port, fetch_data=fetch_data)
+            return Asset(cid, self.local_gateway, self.api_port, fetch_data=fetch_data, mfs_folder_path=self.mfs_folder_path)
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
@@ -228,9 +229,26 @@ class Web3:
         except Exception as e:
             print(f"Error with dataframe retrieval: {e}")
 
+    def createMFSFolder(self, folder_path: str) -> str:
+        """
+        Create MFS folder and set as path for pinning
+
+        :param str folder_path: Path/name of folder to create
+        """
+        response = requests.post(
+            f"http://{self.local_gateway}:{self.api_port}/api/v0/files/mkdir?arg=${folder_path}&cid-version=1&parents=true",
+        )
+
+        self.mfs_folder_path = folder_path
+
+        if response.status_code == 200:
+            print("Folder created successfully")
+        else:
+            print("Error creating folder [status: {response.status_code}]")
+
 
 class Asset:
-    def __init__(self, cid: str, local_gateway: str, api_port, fetch_data=True) -> None:
+    def __init__(self, cid: str, local_gateway: str, api_port, fetch_data=True, mfs_folder_path=None) -> None:
         """
         Constructor for asset object
 
@@ -241,6 +259,7 @@ class Asset:
         self.local_gateway = local_gateway
         self.api_port = api_port
         self.data = None
+        self.mfs_folder_path = None
         if fetch_data:
             self.fetch()
 
@@ -279,9 +298,35 @@ class Asset:
 
         if response.status_code == 200:
             print("Data pinned successfully")
-            
         else:
             print("Error pinning data")
+
+    @ensure_data_fetched
+    def copy_to_mfs(self, name) -> None:
+        """
+        Copy asset to MFS folder
+
+        :param name str: Name of file to copy to MFS (optional, will default to CID)
+        """
+        response = None
+        filename = name
+
+        if filename is None:
+            filename = self.cid
+
+        if self.mfs_folder_path is not None:
+            response = requests.post(
+                f"http://{self.local_gateway}:{self.api_port}/api/v0/files/cp?arg=/ipfs/{self.cid}&arg={self.mfs_folder_path}/{filename}"
+            )
+        else:
+            response = requests.post(
+                f"http://{self.local_gateway}:{self.api_port}/api/v0/files/cp?arg=/ipfs/{self.cid}&arg=/{filename}"
+            )
+
+        if response.status_code == 200:
+            print("Data copied to MFS successfully")
+        else:
+            print("Error copying data to MFS [status: {response.status_code}]")
 
     # Returns asset as np array if image
     @ensure_data_fetched
