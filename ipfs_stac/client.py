@@ -140,6 +140,12 @@ class Web3:
         Get the collection ids from the stac endpoint
         """
         return [collection.id for collection in self.client.get_collections()]
+    
+    def get_collections(self) -> List["Collection"]:
+        """
+        Returns list of collections from STAC endpoint
+        """
+        return list(self.client.get_collections())
 
     def startDaemon(self) -> None:
         """
@@ -266,6 +272,28 @@ class Web3:
         all = search.item_collection()
 
         return all[index]
+    
+    def getAssetNames(self, collection: Collection) -> List[str]:
+        """
+        Returns list of asset names from collection
+
+        :param collection: STAC collection
+        """
+
+        if collection is None:
+            raise ValueError("Collection must be provided")
+
+        try:
+            asset_names = set()
+            items = collection.get_all_items()
+
+            for i in items:
+                names = list(i.get_assets().keys())
+                asset_names.update(names)
+
+            return list(asset_names)
+        except Exception as e:
+            print(f"Error with getting asset names: {e}")
 
     def getAssetFromItem(
         self, item: Item, asset_name: str, fetch_data=False
