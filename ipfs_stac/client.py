@@ -4,6 +4,7 @@ import os
 import json
 from typing import List
 import warnings
+from typing import Union
 
 # Third Party Imports
 import fsspec
@@ -273,27 +274,36 @@ class Web3:
 
         return all[index]
     
-    def getAssetNames(self, collection: Collection) -> List[str]:
+    def getAssetNames(self, stac_obj: Union[Collection, Item] = None) -> List[str]:
         """
-        Returns list of asset names from collection
+        Returns list of asset names from collection or item
 
-        :param collection: STAC collection
+        :param stac_obj: STAC collection or item
         """
 
-        if collection is None:
-            raise ValueError("Collection must be provided")
+        if stac_obj is None:
+            raise ValueError("STAC Object (Collection or item) must be provided")
 
-        try:
-            asset_names = set()
-            items = collection.get_all_items()
+        if isinstance(stac_obj, Collection) == False and isinstance(stac_obj, Item) == False:
+            raise ValueError("STAC Object must be a Collection or Item") 
+        
+        if type(stac_obj) is Collection:
+            try:
+                asset_names = set()
+                items = stac_obj.get_all_items()
 
-            for i in items:
-                names = list(i.get_assets().keys())
-                asset_names.update(names)
+                for i in items:
+                    names = list(i.get_assets().keys())
+                    asset_names.update(names)
 
-            return list(asset_names)
-        except Exception as e:
-            print(f"Error with getting asset names: {e}")
+                return list(asset_names)
+            except Exception as e:
+                print(f"Error with getting asset names: {e}")
+        elif type(stac_obj) is Item:
+            try:
+                return list(stac_obj.get_assets().keys())
+            except Exception as e:
+                print(f"Error with getting asset names: {e}")
 
     def getAssetFromItem(
         self, item: Item, asset_name: str, fetch_data=False
