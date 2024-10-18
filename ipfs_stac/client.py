@@ -3,6 +3,7 @@ from io import BytesIO, StringIO
 import os
 import subprocess
 import time
+from datetime import datetime
 from typing import List
 import warnings
 
@@ -34,6 +35,73 @@ def ensure_data_fetched(func):
         return func(self, *args, **kwargs)
 
     return wrapper
+
+class DynamicProgressText:
+    def __init__(self, cid, total_size):
+        self.cid = cid
+        self.progress = 0
+        self.total_size_bytes = total_size
+        self.total_size = self.format_size(total_size)
+        self._start = datetime.now()
+
+    def update_progress(self, progress):
+        self.progress = progress
+
+    def format_size(self, size_in_bytes):
+        units = ["B", "KB", "MB", "GB", "TB"]
+        unit_index = 0
+
+        while size_in_bytes >= 1024 and unit_index < len(units) - 1:
+            size_in_bytes /= 1024
+            unit_index += 1
+
+        return f"{size_in_bytes:.4f} {units[unit_index]}"
+
+    def __str__(self):
+        now = datetime.now()
+        delta = now - self._start
+        cid_short = self.cid.split("/")[-1]
+        progress_text = self.format_size(self.progress)
+        return f"Fetching {cid_short} - {progress_text}/{self.total_size} ({round(delta.total_seconds(), 1)}s)"
+
+
+def fetchCID(cid: str) -> bytes:
+    """
+    Fetches data from CID
+
+    :param str cid: CID to retrieve
+    """
+
+    try:
+        fs = fsspec.filesystem("ipfs")
+        total_size = fs.size(f"ipfs://{cid}")
+
+        dynamic_text = DynamicProgressText(cid, total_size)
+
+        with yaspin(text=dynamic_text, color=None) as spinner:
+            with fsspec.open(f"ipfs://{cid}", "rb") as contents:
+                progress = 0
+                file_data = bytearray()
+
+                while True:
+                    chunk = contents.read()
+                    progress += len(chunk)
+                    if not chunk:
+                        break
+                    dynamic_text.update_progress(progress)
+                    spinner.text = dynamic_text
+
+            if file_data:
+                spinner.ok("✅ ")
+            else:
+                spinner.fail("💥 ")
+
+            return bytes(file_data)
+    except FileNotFoundError as e:
+        print(f"Could not file with CID: {cid}. Are you sure it exists?")
+        raise e
+
+
 
 def fetchCID(cid: str) -> bytes:
     """
