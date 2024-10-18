@@ -1,10 +1,10 @@
 # Standard Library Imports
-from io import BytesIO, StringIO
+from io import StringIO
 import os
-import subprocess
-import time
+import json
 from typing import List
 import warnings
+from typing import Union
 
 # Third Party Imports
 import fsspec
@@ -12,7 +12,7 @@ import requests
 import pandas as pd
 from bs4 import BeautifulSoup
 from pystac_client import Client
-from pystac import Item
+from pystac import Collection, Item, ItemCollection
 import numpy as np
 import rasterio
 from yaspin import yaspin
@@ -26,6 +26,7 @@ REMOTE_GATEWAYS = [
     "https://dweb.link",
 ]
 
+
 def ensure_data_fetched(func):
     def wrapper(self, *args, **kwargs):
         if self.data is None:
@@ -34,6 +35,7 @@ def ensure_data_fetched(func):
         return func(self, *args, **kwargs)
 
     return wrapper
+
 
 def fetchCID(cid: str) -> bytes:
     """
@@ -63,7 +65,7 @@ def fetchCID(cid: str) -> bytes:
                 spinner.ok("✅ ")
             else:
                 spinner.fail("💥 ")
-            
+
             return bytes(file_data)
     except FileNotFoundError as e:
         print(f"Could not file with CID: {cid}. Are you sure it exists?")
@@ -86,6 +88,8 @@ class Web3:
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
         self._process = None
+        self.client: Client = Client.open(self.stac_endpoint)
+        self.collections = self._get_collections_ids()
 
         if api_port is None:
             raise ValueError("api_port must be set")
@@ -109,6 +113,41 @@ class Web3:
                 f"http://{self.local_gateway}:{self.gateway_port}"
             )
 
+        # Load configuration at instantiation
+        config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        with open(config_path, "r") as f:
+            self.config = json.load(f)
+
+    def overwrite_config(self, path=None) -> None:
+        """
+        *only use if you know what you're doing*
+        Overwrite configuration file with configuration in memory
+
+        :param str path: Path to configuration file (optional)
+        """
+
+        # Get user's home directory
+        home = os.path.expanduser("~")
+        if path:
+            config_path = path
+        else:
+            config_path = os.path.join(home, ".ipfs", "config")
+
+        with open(config_path, "w") as f:
+            json.dump(self.config, f)
+
+    def _get_collections_ids(self) -> List[str]:
+        """
+        Get the collection ids from the stac endpoint
+        """
+        return [collection.id for collection in self.client.get_collections()]
+    
+    def get_collections(self) -> List["Collection"]:
+        """
+        Returns list of collections from STAC endpoint
+        """
+        return list(self.client.get_collections())
+
     def startDaemon(self) -> None:
         """
         Starts Kubo CLI Daemon if not already running
@@ -123,7 +162,11 @@ class Web3:
                     # Check if process name contains the given name string.
                     if process_name.lower() in proc.info["name"].lower():
                         return True
-                except ( psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                except (
+                    psutil.NoSuchProcess,
+                    psutil.AccessDenied,
+                    psutil.ZombieProcess,
+                ):
                     pass
             return False
 
@@ -165,7 +208,7 @@ class Web3:
 
     def searchSTACByBox(
         self, bbox: List["str"], collections: List["str"]
-    ):  # TODO add return type
+    ) -> ItemCollection:
         """
         Search STAC catalog by bounding box and return array of items
 
@@ -181,6 +224,35 @@ class Web3:
         all = search.item_collection()
 
         return all
+
+    def searchSTAC(self, **kwargs) -> List[Item]:
+        """
+        Search STAC catalog for items using the search method from pystac-client.
+
+        Note: No request is sent to the API until a method is called to iterate
+        through the resulting STAC Items, either :meth:`ItemSearch.item_collections`,
+        :meth:`ItemSearch.items`, or :meth:`ItemSearch.items_as_dicts`.
+
+        :param kwargs: Keyword arguments for the search method.
+        :return: list of pystac.Item objects
+        """
+        try:
+            search_results = self.client.search(**kwargs)
+            # Grab all the items each each result page.
+            items_from_search = list()
+            for page in search_results.pages():
+                for item in page:
+                    items_from_search.append(item)
+
+            return items_from_search
+
+        except Exception as e:
+            # Print the error message and the keyword argument that caused the error.
+            if isinstance(e, TypeError):
+                print(f"Error: {e}")
+                print(f"Search method docstring: {self.client.search.__doc__}")
+            else:
+                print(f"Error: {e}")
 
     def searchSTACByBoxIndex(
         self, bbox: List["str"], collections: List["str"], index: int
@@ -201,6 +273,37 @@ class Web3:
         all = search.item_collection()
 
         return all[index]
+    
+    def getAssetNames(self, stac_obj: Union[Collection, Item] = None) -> List[str]:
+        """
+        Returns list of asset names from collection or item
+
+        :param stac_obj: STAC collection or item
+        """
+
+        if stac_obj is None:
+            raise ValueError("STAC Object (Collection or item) must be provided")
+
+        if isinstance(stac_obj, Collection) == False and isinstance(stac_obj, Item) == False:
+            raise ValueError("STAC Object must be a Collection or Item") 
+        
+        if type(stac_obj) is Collection:
+            try:
+                asset_names = set()
+                items = stac_obj.get_all_items()
+
+                for i in items:
+                    names = list(i.get_assets().keys())
+                    asset_names.update(names)
+
+                return list(asset_names)
+            except Exception as e:
+                print(f"Error with getting asset names: {e}")
+        elif type(stac_obj) is Item:
+            try:
+                return list(stac_obj.get_assets().keys())
+            except Exception as e:
+                print(f"Error with getting asset names: {e}")
 
     def getAssetFromItem(
         self, item: Item, asset_name: str, fetch_data=False
