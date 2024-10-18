@@ -49,7 +49,7 @@ def fetchCID(cid: str) -> bytes:
 
         with yaspin(
             text=f"Fetching {cid.split('/')[-1]} - {progress / 1048576:.2f}/{fs.size(f'ipfs://{cid}') / 1048576:.2f} MB",
-            color = None,
+            color=None,
         ) as spinner:
             with fsspec.open(f"ipfs://{cid}", "rb") as contents:
                 file_data = bytearray()
@@ -70,6 +70,7 @@ def fetchCID(cid: str) -> bytes:
     except FileNotFoundError as e:
         print(f"Could not file with CID: {cid}. Are you sure it exists?")
         raise e
+
 
 class Web3:
     def __init__(
@@ -103,15 +104,8 @@ class Web3:
         if self.local_gateway:
             self.startDaemon()
 
-        # Check if the remote gateway env variable already exists
-        if ENV_VAR_NAME in os.environ:
-            os.environ[ENV_VAR_NAME] += (
-                os.pathsep + f"http://{self.local_gateway}:{self.gateway_port}"
-            )
-        else:
-            os.environ[ENV_VAR_NAME] = (
-                f"http://{self.local_gateway}:{self.gateway_port}"
-            )
+        # Add the env var if it doesn't exist or overwrite existing one.
+        os.environ[ENV_VAR_NAME] = f"http://{self.local_gateway}:{self.gateway_port}"
 
         # Load configuration at instantiation
         config_path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -141,7 +135,7 @@ class Web3:
         Get the collection ids from the stac endpoint
         """
         return [collection.id for collection in self.client.get_collections()]
-    
+
     def get_collections(self) -> List["Collection"]:
         """
         Returns list of collections from STAC endpoint
@@ -273,7 +267,7 @@ class Web3:
         all = search.item_collection()
 
         return all[index]
-    
+
     def getAssetNames(self, stac_obj: Union[Collection, Item] = None) -> List[str]:
         """
         Returns list of asset names from collection or item
@@ -284,9 +278,12 @@ class Web3:
         if stac_obj is None:
             raise ValueError("STAC Object (Collection or item) must be provided")
 
-        if isinstance(stac_obj, Collection) == False and isinstance(stac_obj, Item) == False:
-            raise ValueError("STAC Object must be a Collection or Item") 
-        
+        if (
+            isinstance(stac_obj, Collection) == False
+            and isinstance(stac_obj, Item) == False
+        ):
+            raise ValueError("STAC Object must be a Collection or Item")
+
         if type(stac_obj) is Collection:
             try:
                 asset_names = set()
