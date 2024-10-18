@@ -48,7 +48,8 @@ def fetchCID(cid: str) -> bytes:
         progress = 0
 
         with yaspin(
-            text=f"Fetching {cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{cid}')} bytes"
+            text=f"Fetching {cid.split('/')[-1]} - {progress / 1048576:.2f}/{fs.size(f'ipfs://{cid}') / 1048576:.2f} MB",
+            color = None,
         ) as spinner:
             with fsspec.open(f"ipfs://{cid}", "rb") as contents:
                 file_data = bytearray()
@@ -58,8 +59,7 @@ def fetchCID(cid: str) -> bytes:
                     progress += len(chunk)
                     if not chunk:
                         break
-                    file_data.extend(chunk)
-                    spinner.text = f"Fetching {cid.split('/')[-1]} - {progress}/{fs.size(f'ipfs://{cid}')} bytes"
+                    spinner.text = f"Fetching {cid.split('/')[-1]} - {progress / 1048576:.2f}/{fs.size(f'ipfs://{cid}') / 1048576:.2f} MB"
 
             if file_data:
                 spinner.ok("✅ ")
