@@ -183,57 +183,34 @@ class Web3:
 
         return all
     
-    def searchWithItemSearch(
-        self, 
-        method: str = "POST",
-        max_items: int = None,
-        stac_io: bool = None,
-        collections = None,
-        bbox = None, 
-        interesects = None,
-        datetime = None,
-        query = None,
-        limit: int = None,
-        sortby = None,
-        fields = None,
-    ) -> ItemCollection:
+    def searchSTAC(self, **kwargs) -> List[Item]:
         """
-        Search STAC catalog using ItemSearch from pystac-client.
+        Search STAC catalog for items using the search method from pystac-client.
 
-        :param method: HTTP method to use for the request (default is "POST").
-        :param max_items: Maximum number of items to retrieve (optional).
-        :param stac_io: STAC I/O instance to override the default I/O (optional).
-        :param collections: List of collection names to search (optional).
-        :param bbox: Bounding box coordinates to filter (optional).
-        :param interesects: GeoJSON geometry used to filter results by spatial intersection (optional).
-        :param datetime: Temporal filter by date (optional).
-        :param query: Query parameters to filter items based on their attributes (optional).
-        :param limit: Limit the number of items returned by the search (optional).
-        :param sortby: Sorting criteria for the results (optional).
-        :param fields: A dictionary specifying the fields to include or exclude in the results (optional).
-        :return: A pystac ItemCollection with the search results.
+        Note: No request is sent to the API until a method is called to iterate
+        through the resulting STAC Items, either :meth:`ItemSearch.item_collections`,
+        :meth:`ItemSearch.items`, or :meth:`ItemSearch.items_as_dicts`.
+
+        :param kwargs: Keyword arguments for the search method.
+        :return: list of pystac.Item objects
         """
         try:
-            search = ItemSearch(
-                self.stac_endpoint,
-                method=method,
-                max_items=max_items,
-                stac_io=stac_io,
-                collections=collections,
-                bbox=bbox,
-                intersects=interesects,
-                datetime=datetime,
-                query=query,
-                limit=limit,
-                sortby=sortby,
-                fields=fields
-            )
+            search_results = self.client.search(**kwargs)
+            # Grab all the items each each result page.
+            items_from_search = list()
+            for page in search_results.pages():
+                for item in page:
+                    items_from_search.append(item)
 
-            results = search.get_all_items()
-            return results
+            return items_from_search
+
         except Exception as e:
-            print(f"Error during search with ItemSearch: {e}")
-            return None
+            # Print the error message and the keyword argument that caused the error.
+            if isinstance(e, TypeError):
+                print(f"Error: {e}")
+                print(f"Search method docstring: {self.client.search.__doc__}")
+            else:
+                print(f"Error: {e}")
 
 
     def searchSTACByBoxIndex(
