@@ -1,5 +1,5 @@
 # Standard Library Imports
-from io import StringIO
+from io import StringIO, BytesIO
 import os
 import json
 from typing import List
@@ -479,5 +479,5 @@ class Asset:
     # Returns asset as np array if image
     @ensure_data_fetched
     def to_np_ndarray(self, dtype: np.dtype = np.float32) -> np.ndarray:
-        with rasterio.open(self.data) as dataset:
+        with rasterio.open(BytesIO(self.data)) as dataset:
             return dataset.read(1).astype(dtype)

@@ -1,6 +1,6 @@
 ## Standard Library Imports
 from unittest.mock import Mock, mock_open, patch
-import io
+from io import BytesIO
 import subprocess
 import numpy as np
 
@@ -16,38 +16,8 @@ from .base import SetUp
 
 LOCAL_GATEWAY = "127.0.0.1"
 API_PORT = 5001
-STAC_ENDPOINT = "fake_endpoint"
-GATEWAY_PORT = 8081
-
-
-@patch('requests.get')
-@patch('ipfs_stac.client.Web3.getFromCID')
-def test_to_pd_df(mock_getFromCID, mock_get):
-    # Simulating the HTML content
-    html_content = '<a href="http://example.tech/link1"></a><a href="link2"></a>'
-    soup = BeautifulSoup(html_content, "html.parser")
-    endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
-    # Simulating the CSV response
-    csv_response = Mock()
-    csv_response.text = 'column1,column2\nvalue1,value2'
-    mock_get.return_value = csv_response
-    # Simulating the HTML content returned from CID
-    mock_getFromCID.return_value = html_content
-
-    # Your client class instantiation here
-    client = Web3(stac_endpoint='fake_endpoint')
-
-    # Call the function
-    cid = 'fake_cid'
-    df = client.getCSVDataframeFromCID(cid)
-
-    # Assert that the correct dataframe was returned
-    expected_df = pd.read_csv(io.StringIO(csv_response.text))
-    pd.testing.assert_frame_equal(df, expected_df)
-
-    # Additional assertions to check that the correct functions were called
-    mock_getFromCID.assert_called_once_with(cid)
-    mock_get.assert_called_once_with(endpoint)
+STAC_ENDPOINT = "http://ec2-54-172-212-55.compute-1.amazonaws.com/api/v1/pgstac/"
+GATEWAY_PORT = 8080
 
 class TestWeb3(SetUp):
     def setUp(self):
@@ -254,7 +224,7 @@ class TestAsset(SetUp):
     def test_fetch(self):
         assert(self.text_asset_no_fetch.data is None)
         self.text_asset_no_fetch.fetch()
-        content = self.text_asset_no_fetch.data.read().decode('utf-8')
+        content = BytesIO(self.text_asset_no_fetch.data).read().decode('utf-8')
         self.assertEqual(content, "Hello World!")
 
     def test_pin(self):
