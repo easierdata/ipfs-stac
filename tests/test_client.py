@@ -13,20 +13,28 @@ from PIL import Image
 ## Local Imports
 from ipfs_stac.client import Web3, Asset
 from .base import SetUp
+from .base import import_configuration
 
-LOCAL_GATEWAY = "127.0.0.1"
-API_PORT = 5001
-STAC_ENDPOINT = "http://ec2-54-172-212-55.compute-1.amazonaws.com/api/v1/pgstac/"
-GATEWAY_PORT = 8080
+# import configuration settings from config.json file
+props = import_configuration()
+
+LOCAL_GATEWAY = props["ipfs_gateway_ip"]
+API_PORT = props["ipfs_api_port"]
+STAC_ENDPOINT = props["stac_endpoint"]
+GATEWAY_PORT = props["ipfs_gateway_port"]
+
 
 class TestWeb3(SetUp):
     def setUp(self):
-        self.client = Web3(local_gateway=LOCAL_GATEWAY, stac_endpoint=STAC_ENDPOINT, gateway_port=GATEWAY_PORT)
+        self.client = Web3(
+            local_gateway=LOCAL_GATEWAY,
+            stac_endpoint=STAC_ENDPOINT,
+            gateway_port=GATEWAY_PORT,
+        )
 
     def test_init(self):
         self.assertEqual(self.client.local_gateway, LOCAL_GATEWAY)
         self.assertEqual(self.client.stac_endpoint, STAC_ENDPOINT)
-
 
     def test_getFromCID_text(self):
         data = self.client.getFromCID(self.TEXT_FILE_CID)
