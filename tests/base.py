@@ -25,8 +25,8 @@ DEFAULT_CONFIG = {
 
 
 def get_tests_dir():
-    cwd = Path(os.getcwd())
-    return Path(cwd, "tests").as_posix()
+    # Path.cwd()
+    return Path(Path.cwd(), "tests").as_posix()
 
 
 # Get the path to the test directory
