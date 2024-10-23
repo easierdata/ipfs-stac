@@ -60,7 +60,7 @@ def fetchCID(cid: str) -> bytes:
                     if not chunk:
                         break
                     spinner.text = f"Fetching {cid.split('/')[-1]} - {progress / 1048576:.2f}/{fs.size(f'ipfs://{cid}') / 1048576:.2f} MB"
-
+                    file_data += chunk
             if file_data:
                 spinner.ok("✅ ")
             else:
