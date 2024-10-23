@@ -51,7 +51,7 @@ def fetchCID(cid: str) -> bytes:
             text=f"Fetching {cid.split('/')[-1]} - {progress / 1048576:.2f}/{fs.size(f'ipfs://{cid}') / 1048576:.2f} MB",
             color=None,
         ) as spinner:
-            with fsspec.open(f"ipfs://{cid}", "rb") as contents:
+            with fs.open(f"ipfs://{cid}", "rb") as contents:
                 file_data = bytearray()
 
                 while True:
