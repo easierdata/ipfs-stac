@@ -91,6 +91,7 @@ class Web3:
         self._process = None
         self.client: Client = Client.open(self.stac_endpoint)
         self.collections = self._get_collections_ids()
+        self.config = None
 
         if api_port is None:
             raise ValueError("api_port must be set")
@@ -108,9 +109,9 @@ class Web3:
         os.environ[ENV_VAR_NAME] = f"http://{self.local_gateway}:{self.gateway_port}"
 
         # Load configuration at instantiation
-        config_path = os.path.join(os.path.dirname(__file__), "config.json")
-        with open(config_path, "r") as f:
-            self.config = json.load(f)
+        # config_path = os.path.join(os.path.dirname(__file__), "config.json")
+        # with open(config_path, "r") as f:
+        #     self.config = json.load(f)
 
     def overwrite_config(self, path=None) -> None:
         """
