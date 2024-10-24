@@ -79,7 +79,7 @@ def save_config(config_dict):
 
 class SetUp(TestCase):
     TEXT_FILE_CID = "Qmf1rtki74jvYmGeqaaV51hzeiaa6DyWc98fzDiuPatzyy"
-    IMAGE_FILE_CID = "QmQeQAWNJ6WXuPp3hms9qNSX5uQiSNSybYfRUqEe9PinL9"
+    IMAGE_FILE_CID = "bafybeihejpcpwovcfn74dkwhhhdidfug7cmfk5kdihjlmgzj6y7345mll4"
     TEXT_FILE_PATH = Path(TEST_DATA_DIR, "hello.txt")
     IMAGE_FILE_PATH = Path(TEST_DATA_DIR, "image.jpg")
 

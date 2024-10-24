@@ -43,9 +43,9 @@ class TestWeb3(SetUp):
 
     def test_getFromCID_image(self):
         data = self.client.getFromCID(self.IMAGE_FILE_CID)
-        image = Image.open(io.BytesIO(data))
-        self.assertEqual(image.size, (50, 50))
-
+        image = Image.open(BytesIO(data))
+        # xkcd comic
+        self.assertEqual(image.size, (740, 1076))
 
     def test_getFromCID_invalid_CID(self):
         with self.assertRaises(FileNotFoundError):
