@@ -40,7 +40,7 @@ class TestWeb3(SetUp):
 
     def test_getFromCID_text(self):
         data = self.client.getFromCID(self.TEXT_FILE_CID)
-        data_str = data.decode('utf-8')
+        data_str = data.decode("utf-8")
         self.assertEqual(data_str, "Hello World!")
 
     def test_getFromCID_image(self):
@@ -60,23 +60,23 @@ class TestWeb3(SetUp):
         mock_catalog = Mock()
         mock_search = Mock()
         mock_catalog.search.return_value = mock_search
-        mock_search.item_collection.return_value = [Mock(id='item1'), Mock(id='item2')]
+        mock_search.item_collection.return_value = [Mock(id="item1"), Mock(id="item2")]
 
         # Connect the mock catalog to Client.open
         mock_open.return_value = mock_catalog
 
         # Your client class instantiation here
-        client = Web3(stac_endpoint='fake_endpoint')
+        client = Web3(stac_endpoint=SAMPLE_STAC_ENDPOINT_URL)
 
         # Call the function
         bbox = [10, 20, 30, 40]
-        collections = ['collection1', 'collection2']
+        collections = ["collection1", "collection2"]
         result = client.searchSTACByBox(bbox, collections)
 
         # Assert that the correct items were returned
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0].id, 'item1')
-        self.assertEqual(result[1].id, 'item2')
+        self.assertEqual(result[0].id, "item1")
+        self.assertEqual(result[1].id, "item2")
 
         mock_open.assert_called_once_with(SAMPLE_STAC_ENDPOINT_URL)
         mock_catalog.search.assert_called_once_with(collections=collections, bbox=bbox)
@@ -89,7 +89,7 @@ class TestWeb3(SetUp):
         mock_catalog = Mock()
         mock_search = Mock()
         mock_catalog.search.return_value = mock_search
-        mock_search.item_collection.return_value = [Mock(id='item1'), Mock(id='item2')]
+        mock_search.item_collection.return_value = [Mock(id="item1"), Mock(id="item2")]
 
         # Connect the mock catalog to Client.open
         mock_open.return_value = mock_catalog
@@ -99,17 +99,16 @@ class TestWeb3(SetUp):
 
         # Call the function
         bbox = [10, 20, 30, 40]
-        collections = ['collection1', 'collection2']
+        collections = ["collection1", "collection2"]
         index = 1
         result = client.searchSTACByBoxIndex(bbox, collections, index)
 
         # Assert that the correct item was returned
-        self.assertEqual(result.id, 'item2')
+        self.assertEqual(result.id, "item2")
 
         mock_open.assert_called_once_with(SAMPLE_STAC_ENDPOINT_URL)
         mock_catalog.search.assert_called_once_with(collections=collections, bbox=bbox)
         mock_search.item_collection.assert_called_once()
-
 
     def test_getAssetFromItem(self):
         item_dict = {
@@ -118,26 +117,19 @@ class TestWeb3(SetUp):
             "id": "test_item",
             "bbox": [],
             "geometry": {},
-            "properties": {
-                "datetime": "2021-01-01T00:00:00Z"
-            },
+            "properties": {"datetime": "2021-01-01T00:00:00Z"},
             "collection": "simple-collection",
             "links": [],
             "assets": {
                 "asset1": {
                     "href": "/path/to/top-level-href",
-                    "alternate": {
-                        "IPFS": {
-                            "href": "/path/to/cid"
-                        }
-                    }
+                    "alternate": {"IPFS": {"href": "/path/to/cid"}},
                 }
-            }
+            },
         }
         item = Item.from_dict(item_dict)
         asset = self.client.getAssetFromItem(item, "asset1")
         self.assertEqual(str(asset), "cid")
-
 
     def test_getAssetsFromItem(self):
         item_dict = {
@@ -146,21 +138,19 @@ class TestWeb3(SetUp):
             "id": "test_item",
             "bbox": [],
             "geometry": {},
-            "properties": {
-                "datetime": "2021-01-01T00:00:00Z"
-            },
+            "properties": {"datetime": "2021-01-01T00:00:00Z"},
             "collection": "simple-collection",
             "links": [],
             "assets": {
                 "asset1": {
                     "href": "/path/to/top-level-href",
-                    "alternate": {"IPFS": {"href": "/path/to/cid1"}}
+                    "alternate": {"IPFS": {"href": "/path/to/cid1"}},
                 },
                 "asset2": {
                     "href": "/path/to/another-href",
-                    "alternate": {"IPFS": {"href": "/path/to/cid2"}}
-                }
-            }
+                    "alternate": {"IPFS": {"href": "/path/to/cid2"}},
+                },
+            },
         }
         item = Item.from_dict(item_dict)
         asset_names = ["asset1", "asset2"]
@@ -170,9 +160,8 @@ class TestWeb3(SetUp):
         self.assertEqual(str(assetArray[0]), "cid1")
         self.assertEqual(str(assetArray[1]), "cid2")
 
-
-    @patch('fsspec.open')
-    def test_writeCID(self, mock_fsspec_open): #TODO remove mocks?
+    @patch("fsspec.open")
+    def test_writeCID(self, mock_fsspec_open):  # TODO remove mocks?
         # Your client class instantiation here
         client = Web3(stac_endpoint=SAMPLE_STAC_ENDPOINT_URL)
 
@@ -185,7 +174,9 @@ class TestWeb3(SetUp):
         contents = b"file contents"
 
         # Mock the fsspec open method
-        mock_fsspec_open.return_value.__enter__.return_value.read.return_value = contents
+        mock_fsspec_open.return_value.__enter__.return_value.read.return_value = (
+            contents
+        )
 
         with patch("builtins.open", mock_file):
             # Call the function
@@ -197,11 +188,10 @@ class TestWeb3(SetUp):
             # Assert that the contents were written to the file
             mock_file().write.assert_called_once_with(contents)
 
-
     def test_uploadToIPFS_file_path(self):
         cid = self.client.uploadToIPFS(self.TEXT_FILE_PATH)
         data = self.client.getFromCID(cid)
-        data_str = data.decode('utf-8')
+        data_str = data.decode("utf-8")
         self.assertEqual(data_str, "Hello World!")
 
     def test_uploadToIPFS_bytes(self):
@@ -209,7 +199,7 @@ class TestWeb3(SetUp):
             bytes = f.read()
         cid = self.client.uploadToIPFS(bytes_data=bytes)
         data = self.client.getFromCID(cid)
-        data_str = data.decode('utf-8')
+        data_str = data.decode("utf-8")
         self.assertEqual(data_str, "Hello World!")
 
     def test_pinned_list(self):
@@ -217,7 +207,8 @@ class TestWeb3(SetUp):
         self.client.uploadToIPFS(self.TEXT_FILE_PATH)
         pinned_list = self.client.pinned_list()
         self.assertIn(self.TEXT_FILE_CID, pinned_list)
-        
+
+
 class TestAsset(SetUp):
     def setUp(self):
         self.text_asset = Asset(self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT)
@@ -229,15 +220,15 @@ class TestAsset(SetUp):
     def test_init(self):
         self.assertEqual(self.text_asset.cid, self.TEXT_FILE_CID)
         self.assertEqual(self.text_asset.local_gateway, LOCAL_GATEWAY)
-    
+
     def test_str_representation(self):
         self.assertEqual(str(self.text_asset), self.TEXT_FILE_CID)
 
     @unittest.skip("Skipping this test case. More work needed")
     def test_fetch(self):
-        assert(self.text_asset_no_fetch.data is None)
+        assert self.text_asset_no_fetch.data is None
         self.text_asset_no_fetch.fetch()
-        content = BytesIO(self.text_asset_no_fetch.data).read().decode('utf-8')
+        content = self.text_asset_no_fetch.data
         self.assertEqual(content, "Hello World!")
 
     @unittest.skip("Skipping this test case. More work needed")
@@ -256,4 +247,3 @@ class TestAsset(SetUp):
         np_array = self.image_asset.to_np_ndarray()
         self.assertIsInstance(np_array, np.ndarray)
         self.assertEqual(np_array.shape, (50, 50))
-
