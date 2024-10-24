@@ -1,4 +1,5 @@
 ## Standard Library Imports
+import unittest
 from unittest.mock import Mock, mock_open, patch
 from io import BytesIO
 import subprocess
@@ -12,8 +13,8 @@ from PIL import Image
 
 ## Local Imports
 from ipfs_stac.client import Web3, Asset
-from .base import SetUp
-from .base import import_configuration
+
+from .base import SetUp, import_configuration
 
 # import configuration settings from config.json file
 props = import_configuration()
