@@ -224,11 +224,10 @@ class TestAsset(SetUp):
     def test_str_representation(self):
         self.assertEqual(str(self.text_asset), self.TEXT_FILE_CID)
 
-    @unittest.skip("Skipping this test case. More work needed")
     def test_fetch(self):
         assert self.text_asset_no_fetch.data is None
         self.text_asset_no_fetch.fetch()
-        content = self.text_asset_no_fetch.data
+        content = self.text_asset_no_fetch.data.decode("utf-8")
         self.assertEqual(content, "Hello World!")
 
     @unittest.skip("Skipping this test case. More work needed")
