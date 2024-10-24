@@ -221,7 +221,9 @@ class TestWeb3(SetUp):
 class TestAsset(SetUp):
     def setUp(self):
         self.text_asset = Asset(self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT)
-        self.text_asset_no_fetch = Asset(self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT, fetch_data=False)
+        self.text_asset_no_fetch = Asset(
+            self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT, fetch_data=False
+        )
         self.image_asset = Asset(self.IMAGE_FILE_CID, LOCAL_GATEWAY, API_PORT)
 
     def test_init(self):
