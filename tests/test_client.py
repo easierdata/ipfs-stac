@@ -22,6 +22,7 @@ LOCAL_GATEWAY = props["ipfs_gateway_ip"]
 API_PORT = props["ipfs_api_port"]
 STAC_ENDPOINT = props["stac_endpoint"]
 GATEWAY_PORT = props["ipfs_gateway_port"]
+SAMPLE_STAC_ENDPOINT_URL = "https://landsatlook.usgs.gov/stac-server/"
 
 
 class TestWeb3(SetUp):
@@ -76,7 +77,7 @@ class TestWeb3(SetUp):
         self.assertEqual(result[0].id, 'item1')
         self.assertEqual(result[1].id, 'item2')
 
-        mock_open.assert_called_once_with('fake_endpoint')
+        mock_open.assert_called_once_with(SAMPLE_STAC_ENDPOINT_URL)
         mock_catalog.search.assert_called_once_with(collections=collections, bbox=bbox)
         mock_search.item_collection.assert_called_once()
 
@@ -93,7 +94,7 @@ class TestWeb3(SetUp):
         mock_open.return_value = mock_catalog
 
         # Your client class instantiation here
-        client = Web3(stac_endpoint='fake_endpoint')
+        client = Web3(stac_endpoint=SAMPLE_STAC_ENDPOINT_URL)
 
         # Call the function
         bbox = [10, 20, 30, 40]
@@ -104,7 +105,7 @@ class TestWeb3(SetUp):
         # Assert that the correct item was returned
         self.assertEqual(result.id, 'item2')
 
-        mock_open.assert_called_once_with('fake_endpoint')
+        mock_open.assert_called_once_with(SAMPLE_STAC_ENDPOINT_URL)
         mock_catalog.search.assert_called_once_with(collections=collections, bbox=bbox)
         mock_search.item_collection.assert_called_once()
 
@@ -172,7 +173,7 @@ class TestWeb3(SetUp):
     @patch('fsspec.open')
     def test_writeCID(self, mock_fsspec_open): #TODO remove mocks?
         # Your client class instantiation here
-        client = Web3(stac_endpoint='fake_endpoint')
+        client = Web3(stac_endpoint=SAMPLE_STAC_ENDPOINT_URL)
 
         # Dummy CID and file path
         cid = "fake_cid"
