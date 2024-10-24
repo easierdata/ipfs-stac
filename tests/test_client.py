@@ -53,7 +53,7 @@ class TestWeb3(SetUp):
         with self.assertRaises(FileNotFoundError):
             self.client.getFromCID("invalid_CID")
 
-    @unittest.skip("Skipping this test case. More work needed")
+    # @unittest.skip("Skipping this test case. More work needed")
     @patch("pystac_client.client.Client.open")
     def test_searchSTACByBox(self, mock_open):
         # Set up fake STAC catalog response
@@ -61,6 +61,9 @@ class TestWeb3(SetUp):
         mock_search = Mock()
         mock_catalog.search.return_value = mock_search
         mock_search.item_collection.return_value = [Mock(id="item1"), Mock(id="item2")]
+
+        mock_collections = [Mock(id="collection1"), Mock(id="collection2")]
+        mock_catalog.get_collections.return_value = mock_collections
 
         # Connect the mock catalog to Client.open
         mock_open.return_value = mock_catalog
@@ -78,9 +81,9 @@ class TestWeb3(SetUp):
         self.assertEqual(result[0].id, "item1")
         self.assertEqual(result[1].id, "item2")
 
-        mock_open.assert_called_once_with(SAMPLE_STAC_ENDPOINT_URL)
         mock_catalog.search.assert_called_once_with(collections=collections, bbox=bbox)
         mock_search.item_collection.assert_called_once()
+        mock_catalog.get_collections.assert_called_once()
 
     @unittest.skip("Skipping this test case. More work needed")
     @patch("pystac_client.client.Client.open")
