@@ -234,7 +234,7 @@ class TestAsset(SetUp):
         content = self.text_asset_no_fetch.data.decode("utf-8")
         self.assertEqual(content, "Hello World!")
 
-    @unittest.skip("Skipping this test case. More work needed")
+    # @unittest.skip("Skipping this test case. More work needed")
     def test_pin(self):
         # Remove the asset from the pinned objects
         subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
@@ -245,8 +245,7 @@ class TestAsset(SetUp):
         result = subprocess.run(f"ipfs pin ls | grep {self.TEXT_FILE_CID}", shell=True)
         self.assertEqual(result.returncode, 0)
 
-    @unittest.skip("Skipping this test case. More work needed")
     def test_to_np_ndarray(self):
         np_array = self.image_asset.to_np_ndarray()
         self.assertIsInstance(np_array, np.ndarray)
-        self.assertEqual(np_array.shape, (50, 50))
+        self.assertEqual(np_array.shape, (1076, 740))
