@@ -220,7 +220,7 @@ class Web3:
 
         return all
 
-    def searchSTAC(self, **kwargs) -> List[Item]:
+    def searchSTAC(self, **kwargs) -> ItemCollection:
         """
         Search STAC catalog for items using the search method from pystac-client.
 
@@ -233,13 +233,7 @@ class Web3:
         """
         try:
             search_results = self.client.search(**kwargs)
-            # Grab all the items each each result page.
-            items_from_search = list()
-            for page in search_results.pages():
-                for item in page:
-                    items_from_search.append(item)
-
-            return items_from_search
+            return search_results.item_collection()
 
         except Exception as e:
             # Print the error message and the keyword argument that caused the error.
