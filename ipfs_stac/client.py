@@ -147,50 +147,62 @@ class Web3:
         """
         return list(self.client.get_collections())
 
-    def startDaemon(self) -> None:
+    def _is_process_running(self) -> bool:
+        """Check if IPFS daemon process is running
+
+        Returns:
+            bool: True if process is running, False otherwise
         """
-        Starts Kubo CLI Daemon if not already running
+        process_name = "ipfs"
+        for proc in psutil.process_iter(["name"]):
+            try:
+                if process_name.lower() in proc.info["name"].lower():
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+        return False
+
+    def shutdown_process(self):
+        """Shutdown the IPFS daemon process"""
+        if self.daemon_status:
+            print("Shutdown process is running...")
+
+            self.daemon_status.terminate()
+            self.daemon_status.wait(timeout=3)
+
+            # If process is still running, kill it
+            if self._is_process_running():
+                self.daemon_status.kill()
+
+            # If process is still running, exit with error
+            elif self._is_process_running():
+                import sys
+
+                sys.exit("Failed to shutdown IPFS daemon")
+
+            self.daemon_status = None
+
+    def startDaemon(self):
+        """Start the IPFS daemon process
+
+        Raises:
+            Exception: If the IPFS daemon fails to start
         """
-
-        def is_process_running(process_name):
-            import psutil
-
-            # Iterate over all running processes
-            for proc in psutil.process_iter(["name"]):
-                try:
-                    # Check if process name contains the given name string.
-                    if process_name.lower() in proc.info["name"].lower():
-                        return True
-                except (
-                    psutil.NoSuchProcess,
-                    psutil.AccessDenied,
-                    psutil.ZombieProcess,
-                ):
-                    pass
-            return False
-
-        def shutdown_process():
-            if self._process:
-                self._process.terminate()  # or self._process.kill() if terminate is not enough
-                self._process = None
-
         try:
-            # Check if 'ipfs daemon' is already running
-            if not is_process_running("ipfs"):
-                import subprocess
-                import atexit
-
-                self._process = subprocess.Popen(["ipfs", "daemon"])
-                atexit.register(shutdown_process)  # Register the shutdown function
+            if not self._is_process_running():
+                self.daemon_status = subprocess.Popen(["ipfs", "daemon"])
+                atexit.register(self.shutdown_process)
 
             heartbeat_response = requests.post(
-                f"http://{self.local_gateway}:{self.api_port}/api/v0/id"
+                f"http://{self.local_gateway}:{self.api_port}/api/v0/id",
+                timeout=10,
             )
             if heartbeat_response.status_code != 200:
                 warnings.warn(
                     "IPFS Daemon is running but still can't connect. Check your IPFS configuration."
                 )
-        except requests.exceptions.ConnectionError:
+        except Exception as exc:
+            print(f"Error starting IPFS daemon: {exc}")
             raise Exception("Failed to start IPFS daemon")
 
     def getFromCID(self, cid: str) -> bytes:
