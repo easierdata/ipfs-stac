@@ -227,14 +227,12 @@ class Web3:
         :param collections array: Array of collection names
         """
         catalog = Client.open(self.stac_endpoint)
-        search = catalog.search(
+        search_results = catalog.search(
             collections=collections,
             bbox=bbox,
         )
 
-        all = search.item_collection()
-
-        return all
+        return search_results.item_collection()
 
     def searchSTAC(self, **kwargs) -> ItemCollection:
         """
@@ -270,14 +268,12 @@ class Web3:
         :param index int: Index of item to return
         """
         catalog = Client.open(self.stac_endpoint)
-        search = catalog.search(
+        search_results = catalog.search(
             collections=collections,
             bbox=bbox,
         )
 
-        all = search.item_collection()
-
-        return all[index]
+        return search_results.item_collection()[index]
 
     def getAssetNames(self, stac_obj: Union[Collection, Item] = None) -> List[str]:
         """
