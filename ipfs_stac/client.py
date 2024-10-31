@@ -515,8 +515,7 @@ class Asset:
         self.data: bytes = None
         self.is_pinned = False
         if fetch_data:
-            if not self._is_pinned_to_local_node():
-                self.fetch()
+            self.fetch()
 
     def __str__(self) -> str:
         return self.cid
