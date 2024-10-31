@@ -360,7 +360,9 @@ class TestAsset(SetUp):
         self.text_asset_no_fetch = Asset(
             self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT, fetch_data=False
         )
-        self.image_asset = Asset(self.IMAGE_FILE_CID, LOCAL_GATEWAY, API_PORT)
+        self.image_asset = Asset(
+            self.IMAGE_FILE_CID, LOCAL_GATEWAY, API_PORT, fetch_data=True
+        )
 
     def test_init(self):
         self.assertEqual(self.text_asset.cid, self.TEXT_FILE_CID)
