@@ -449,13 +449,31 @@ class Web3:
         except requests.exceptions.RequestException as e:
             print(f"An error occurred: {e}")
 
+    def pinned_list(
+        self, pin_type: str = "recursive", names: bool = False
+    ) -> List[str]:
+        """Fetch pinned CIDs from local node
+
+        Args:
+            pin_type (str, optional): The type of pinned keys to list. Can be "direct", "indirect", "recursive", or "all". Defaults to "recursive".
+            names (bool, optional): Include pin names in the output. Defaults to False.
+
+        Returns:
+            List[str]: List of pinned CIDs. If `names` is True, returns list of json objects.
+        """
+        # Setting param options
+        param_options = f"type={pin_type}&names={names}"
         response = requests.post(
-            f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/ls",
+            f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/ls?{param_options}",
+            timeout=10,
         )
 
         if response.status_code == 200:
             if response.json() != {}:
-                return list(response.json()["Keys"].keys())
+                if names:
+                    return list(response.json())
+                else:
+                    return list(response.json()["Keys"].keys())
             else:
                 return []
         else:
