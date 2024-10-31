@@ -4,6 +4,7 @@ from io import BytesIO
 import subprocess
 import numpy as np
 import requests
+import time
 
 ## Third Party Imports
 from pystac import Item
@@ -353,6 +354,25 @@ class TestWeb3(SetUp):
 
 
 class TestAsset(SetUp):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.daemon_status = cls.start_ipfs_daemon()
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls.daemon_status:
+            print("Terminating IPFS daemon")
+            cls.daemon_status.terminate()
+            cls.daemon_status.kill()
+            cls.daemon_status = None
+        super().tearDownClass()
+
+    @staticmethod
+    def start_ipfs_daemon():
+        print("Starting IPFS daemon")
+        return subprocess.Popen(["ipfs", "daemon"])
+
     def setUp(self):
         self.text_asset = Asset(
             self.TEXT_FILE_CID, LOCAL_GATEWAY, API_PORT, fetch_data=True
