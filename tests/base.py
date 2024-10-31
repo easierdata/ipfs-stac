@@ -85,7 +85,7 @@ class SetUp(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        start_ipfs_if_needed()
+        # start_ipfs_if_needed()
 
         if any(
             not os.path.exists(path)
