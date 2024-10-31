@@ -363,33 +363,91 @@ class Web3:
             print(f"Error with CID write: {e}")
 
     # Use overrideDefault decorator to force local gateway usage
-    def uploadToIPFS(self, file_path: str = None, bytes_data=None) -> str:
+    def uploadToIPFS(
+        self,
+        file_path: str = None,
+        bytes_data: bytes = None,
+        file_name: str = None,
+        pin_content: bool = False,
+        mfs_path: str = None,
+        chunker: str = None,
+    ) -> str:
         """
-        Upload file to IPFS by local node
+        Uploads a file or bytes data to IPFS.
 
-        :param str file_path: The absolute/relative path to file
-        :param bytes bytes_data: The bytes data to upload
+        Args:
+            file_path (str, optional): The path to the file to be uploaded. Defaults to None.
+            bytes_data (bytes, optional): The bytes data to be uploaded. Defaults to None.
+            file_name (str, optional): The name of the file. Defaults to None.
+            pin_content (bool, optional): Pin locally to protect added files from garbage collection. Defaults to False.
+            mfs_path (str, optional): Add reference to Files API (MFS) at the provided path. Defaults to None.
+            chunker (str, optional): Chunking algorithm, size-[bytes], rabin-[min]-[avg]-[max] or buzhash. Defaults to None.
+
+        Raises:
+            ValueError: If neither `file_path` nor `bytes_data` is provided.
+            ValueError: If `bytes_data` is not of type bytes.
+            FileNotFoundError: If the file path provided does not exist.
+
+        Returns:
+            str: The CID (Content Identifier) of the uploaded content.
         """
-        if file_path:
-            files = {"file": open(file_path, "rb")}
-            response = requests.post(
-                f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files
-            )
-        elif bytes_data:
-            files = {"file": ("file", bytes_data)}
-            response = requests.post(
-                f"http://{self.local_gateway}:{self.api_port}/api/v0/add", files=files
-            )
+
+        # Setting param options
+        param_options = f"cid-version=1&pin={pin_content}"
+        if mfs_path is not None:
+            param_options = f"{param_options}&to-files={mfs_path}"
+        if chunker is not None:
+            param_options = f"{param_options}&chunker={chunker}"
+
+        # Define empty payload dictionary
+        components = {"content": None, "name": None}
+
+        # Check if user provided a file path or bytes data
+        if bytes_data is not None:
+            if isinstance(bytes_data, bytes):
+                components["content"] = bytes_data
+            else:
+                raise ValueError(
+                    f"{type(bytes_data)} is not a valid type. `bytes_data` must be of type bytes."
+                )
+        elif file_path is not None:
+            if Path(file_path).exists():
+                with open(file_path, "rb") as f:
+                    components["content"] = f.read()
+            else:
+                raise FileNotFoundError(
+                    f"The file path provided does not exist. Please check {file_path}"
+                )
         else:
             raise ValueError("Either file_path or bytes_data must be provided.")
 
-        data = response.json()
-        return data["Hash"]  # CID
+        # Check if user provided a filename
+        if file_name:
+            components["name"] = file_name
+        elif file_path:
+            components["name"] = Path(file_path).name
 
-    def pinned_list(self) -> List[str]:
-        """
-        Returns array of pinned CIDs
-        """
+        # put the components together as a file payload
+        if components["name"] is not None:
+            file_payload = {"file": (components["name"], components["content"])}
+        else:
+            file_payload = {"file": components["content"]}
+
+        try:
+            response = requests.post(
+                f"http://{self.local_gateway}:{self.api_port}/api/v0/add?{param_options}",
+                files=file_payload,
+                timeout=10,
+            )
+            response.raise_for_status()  # Raise an exception for HTTP errors
+
+            data = response.json()
+            return data["Hash"]  # CID
+
+        except requests.exceptions.Timeout:
+            print("The request timed out")
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred: {e}")
 
         response = requests.post(
             f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/ls",
