@@ -375,7 +375,6 @@ class TestAsset(SetUp):
         content = self.text_asset_no_fetch.data.decode("utf-8")
         self.assertEqual(content, "Hello World!")
 
-    # @unittest.skip("Skipping this test case. More work needed")
     def test_pin(self):
         # Remove the asset from the pinned objects
         subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
