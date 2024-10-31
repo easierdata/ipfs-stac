@@ -313,10 +313,15 @@ class Web3:
     def getAssetFromItem(
         self, item: Item, asset_name: str, fetch_data=False
     ) -> "Asset":
-        """
-        Returns asset object from item
+        """Returns asset object from item
 
-        :param item: STAC catalog item
+        Args:
+            item (Item): STAC catalog item
+            asset_name (str): Name of asset to return
+            fetch_data (bool, optional): Fetch data from CID. Defaults to False.
+
+        Returns:
+            Asset: Asset object
         """
         try:
             item_dict = item.to_dict()
