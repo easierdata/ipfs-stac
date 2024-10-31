@@ -289,10 +289,7 @@ class Web3:
         if stac_obj is None:
             raise ValueError("STAC Object (Collection or item) must be provided")
 
-        if (
-            isinstance(stac_obj, Collection) == False
-            and isinstance(stac_obj, Item) == False
-        ):
+        if not isinstance(stac_obj, Collection) and not isinstance(stac_obj, Item):
             raise ValueError("STAC Object must be a Collection or Item")
 
         if type(stac_obj) is Collection:
