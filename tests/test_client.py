@@ -384,7 +384,7 @@ class TestAsset(SetUp):
         self.text_asset.pin()
 
         # Check if the CID exists in the pinned objects
-        result = subprocess.run(f"ipfs pin ls | grep {self.TEXT_FILE_CID}", shell=True)
+        result = subprocess.run(f"ipfs pin ls {self.TEXT_FILE_CID}", shell=True)
         self.assertEqual(result.returncode, 0)
 
     def test_to_np_ndarray(self):
