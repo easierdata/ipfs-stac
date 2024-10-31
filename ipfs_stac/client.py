@@ -92,7 +92,7 @@ class Web3:
         """
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
-        self._process = None
+        self.daemon_status = None
         self.client: Client = Client.open(self.stac_endpoint)
         self.collections = self._get_collections_ids()
         self.config = None
