@@ -1,14 +1,12 @@
 ## Standard Library Imports
-import unittest
-from unittest.mock import Mock, mock_open, patch
+from unittest.mock import Mock, mock_open, patch, MagicMock
 from io import BytesIO
 import subprocess
 import numpy as np
+import requests
 
 ## Third Party Imports
 from pystac import Item
-from bs4 import BeautifulSoup
-import pandas as pd
 from PIL import Image
 
 ## Local Imports
