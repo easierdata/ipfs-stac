@@ -259,7 +259,7 @@ class Web3:
 
     def searchSTACByBoxIndex(
         self, bbox: List["str"], collections: List["str"], index: int
-    ):
+    ) -> Item:
         """
         Search STAC catalog by bounding box and return singular item
 
