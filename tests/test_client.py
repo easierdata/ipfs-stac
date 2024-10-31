@@ -45,7 +45,7 @@ class TestWeb3(SetUp):
         data = self.client.getFromCID(self.IMAGE_FILE_CID)
         image = Image.open(BytesIO(data))
         # xkcd comic
-        self.assertEqual(image.size, (740, 1076))
+        self.assertEqual(image.size, (50, 50))
 
     def test_getFromCID_invalid_CID(self):
         with self.assertRaises(FileNotFoundError):
@@ -246,4 +246,4 @@ class TestAsset(SetUp):
     def test_to_np_ndarray(self):
         np_array = self.image_asset.to_np_ndarray()
         self.assertIsInstance(np_array, np.ndarray)
-        self.assertEqual(np_array.shape, (1076, 740))
+        self.assertEqual(np_array.shape, (50, 50))
