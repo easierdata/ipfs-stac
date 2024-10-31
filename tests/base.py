@@ -53,7 +53,7 @@ def start_ipfs_if_needed():
 def import_configuration():
 
     try:
-        with open(Path(TEST_DIR, CONFIG_FILE_NAME), "r") as f:
+        with open(Path(TEST_DIR, CONFIG_FILE_NAME), "r", encoding="utf-8") as f:
             config = json.load(f)
         return config
     except FileNotFoundError as e:
