@@ -490,7 +490,7 @@ class Web3:
             soup = BeautifulSoup(data, "html.parser")
             endpoint = f"{soup.find_all('a')[0].get('href').replace('.tech', '.io')}{soup.find_all('a')[-1].get('href')}"
 
-            response = requests.get(endpoint)
+            response = requests.get(endpoint, timeout=10)
             csv_data = StringIO(response.text)
             df = pd.read_csv(csv_data)
 
@@ -527,6 +527,7 @@ class Asset:
         """
         resp = requests.post(
             f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/ls?arg=/ipfs/{self.cid}",
+            timeout=10,
         )
         if (resp.json().get("Keys")) and self.cid in resp.json()["Keys"]:
             self.is_pinned = True
@@ -549,9 +550,10 @@ class Asset:
     # Pin to local kubo node
     @ensure_data_fetched
     def pin(self) -> str:
-        response = requests.post(
-            f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/add?arg={self.cid}",
-        )
+            response = requests.post(
+                f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/add?arg={self.cid}",
+                timeout=10,
+            )
 
         if response.status_code == 200:
             print("Data pinned successfully")
