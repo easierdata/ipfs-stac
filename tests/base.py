@@ -4,6 +4,7 @@ import time
 import subprocess
 import os
 import json
+import warnings
 from pathlib import Path
 
 
@@ -37,17 +38,25 @@ TEST_DATA_DIR = Path(TEST_DIR, "data")
 
 
 def start_ipfs_if_needed():
+    config = import_configuration()
     try:
-        requests.get("http://127.0.0.1:5001/")
+        heartbeat_response = requests.post(
+            f'http://{config["ipfs_gateway_ip"]}:{config["ipfs_api_port"]}/api/v0/id',
+            timeout=10,
+        )
+
+        if heartbeat_response.status_code != 200:
+            warnings.warn(
+                "IPFS Daemon is running but still can't connect. Check your IPFS configuration."
+            )
     except requests.exceptions.ConnectionError:
-        subprocess.Popen(["ipfs", "daemon"])
+        print("IPFS Daemon is not running. Starting IPFS Daemon via the CLI.")
+        # time.sleep(2)
+        return subprocess.Popen(["ipfs", "daemon"])
 
-        time.sleep(5)
-
-        try:
-            requests.get("http://127.0.0.1:5001/")
-        except requests.exceptions.ConnectionError:
-            raise Exception("Failed to start IPFS daemon")
+    except Exception as exc:
+        print(f"Error starting IPFS daemon: {exc}")
+        raise Exception("Failed to start IPFS daemon")
 
 
 def import_configuration():
@@ -85,7 +94,6 @@ class SetUp(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # start_ipfs_if_needed()
 
         if any(
             not os.path.exists(path)
