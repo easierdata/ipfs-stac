@@ -132,7 +132,7 @@ class Web3:
         else:
             config_path = os.path.join(home, ".ipfs", "config")
 
-        with open(config_path, "w") as f:
+        with open(config_path, "w", encoding="utf-8") as f:
             json.dump(self.config, f)
 
     def _get_collections_ids(self) -> List[str]:
