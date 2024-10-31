@@ -555,13 +555,12 @@ class Asset:
                 timeout=10,
             )
 
-        if response.status_code == 200:
-            print("Data pinned successfully")
-            self.is_pinned = True
+            if response.status_code == 200:
+                print("Data pinned successfully")
+                self.is_pinned = True
 
-        else:
-            print("Error pinning data")
-            self.is_pinned = False
+            else:
+                print("Error pinning data")
 
     # Returns asset as np array if image
     @ensure_data_fetched
