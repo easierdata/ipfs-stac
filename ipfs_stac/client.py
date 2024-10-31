@@ -533,12 +533,10 @@ class Asset:
             self.is_pinned = True
             return True
         elif resp.json()["Type"] == "error":
-            self.is_pinned = False
             return False
         else:
             print("Error checking if CID is pinned")
             print(resp.json())
-            self.is_pinned = False
             return False
 
     def fetch(self) -> None:
