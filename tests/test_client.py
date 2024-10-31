@@ -210,6 +210,147 @@ class TestWeb3(SetUp):
         pinned_list = self.client.pinned_list()
         self.assertIn(self.TEXT_FILE_CID, pinned_list)
 
+    @patch("psutil.process_iter")
+    @patch("subprocess.Popen")
+    @patch("requests.post")
+    def test_startDaemon(self, mock_post, mock_popen, mock_process_iter):
+        # Mock process_iter to simulate no running process
+        mock_process_iter.return_value = []
+        mock_post.return_value.status_code = 200
+
+        self.client.startDaemon()
+
+        mock_popen.assert_called_once_with(["ipfs", "daemon"])
+        mock_post.assert_called_once_with("http://127.0.0.1:5001/api/v0/id", timeout=10)
+
+    @patch("subprocess.Popen")
+    @patch("requests.post")
+    @patch("psutil.process_iter")
+    @patch("atexit.register")
+    def test_startDaemon_already_running(
+        self, mock_atexit, mock_process_iter, mock_post, mock_popen
+    ):
+        # Simulate IPFS daemon already running
+        mock_process_iter.return_value = [MagicMock(info={"name": "ipfs"})]
+        mock_post.return_value.status_code = 200
+
+        self.client.startDaemon()
+
+        mock_popen.assert_not_called()
+        mock_post.assert_called_once_with(
+            f"http://{self.client.local_gateway}:{self.client.api_port}/api/v0/id",
+            timeout=10,
+        )
+        mock_atexit.assert_not_called()
+
+    @patch("subprocess.Popen")
+    @patch("requests.post")
+    @patch("psutil.process_iter")
+    @patch("atexit.register")
+    def test_startDaemon_not_running(
+        self, mock_atexit, mock_process_iter, mock_post, mock_popen
+    ):
+        # Simulate IPFS daemon not running
+        mock_process_iter.return_value = []
+        mock_post.return_value.status_code = 200
+
+        self.client.startDaemon()
+
+        mock_popen.assert_called_once_with(["ipfs", "daemon"])
+        mock_post.assert_called_once_with(
+            f"http://{self.client.local_gateway}:{self.client.api_port}/api/v0/id",
+            timeout=10,
+        )
+        mock_atexit.assert_called_once()
+
+    @patch("subprocess.Popen")
+    @patch("requests.post")
+    @patch("psutil.process_iter")
+    @patch("atexit.register")
+    def test_startDaemon_fail_to_start(
+        self, mock_atexit, mock_process_iter, mock_post, mock_popen
+    ):
+        # Simulate IPFS daemon not running and failing to start
+        mock_process_iter.return_value = []
+        mock_post.side_effect = requests.exceptions.ConnectionError
+
+        with self.assertRaises(Exception) as context:
+            self.client.startDaemon()
+
+        self.assertTrue("Failed to start IPFS daemon" in str(context.exception))
+        mock_popen.assert_called_once_with(["ipfs", "daemon"])
+        mock_atexit.assert_called_once()
+
+    @patch("subprocess.Popen")
+    @patch("requests.post")
+    @patch("psutil.process_iter")
+    @patch("atexit.register")
+    def test_startDaemon_shutdown_process(
+        self, mock_atexit, mock_process_iter, mock_post, mock_popen
+    ):
+        # Simulate IPFS daemon not running
+        mock_process_iter.return_value = []
+        mock_post.return_value.status_code = 200
+
+        mock_process = MagicMock()
+        mock_popen.return_value = mock_process
+
+        self.client.startDaemon()
+
+        mock_popen.assert_called_once_with(["ipfs", "daemon"])
+        mock_post.assert_called_once_with(
+            f"http://{self.client.local_gateway}:{self.client.api_port}/api/v0/id",
+            timeout=10,
+        )
+        mock_atexit.assert_called_once_with(self.client.shutdown_process)
+
+        # Simulate shutdown
+        self.client.daemon_status.terminate()
+        self.client.daemon_status.kill()
+        self.client.shutdown_process()
+        self.assertIsNone(self.client.daemon_status)
+
+    @patch("psutil.process_iter")
+    @patch("subprocess.Popen")
+    @patch("requests.post")
+    def test_shutdown_process(self, mock_post, mock_popen, mock_process_iter):
+        mock_process_iter.return_value = []
+        mock_post.return_value.status_code = 200
+
+        self.client.startDaemon()
+
+        with patch.object(self.client.daemon_status, "terminate") as mock_terminate:
+            self.client.shutdown_process()
+            mock_terminate.assert_called_once()
+            self.assertIsNone(self.client.daemon_status)
+
+    @patch("psutil.process_iter")
+    @patch("subprocess.Popen")
+    def test_shutdown_process_none(self, mock_subprocess, mock_psutil):
+        self.client.startDaemon()
+        self.client.shutdown_process()
+        self.assertIsNone(self.client.daemon_status)
+
+    @patch("psutil.process_iter")
+    @patch("subprocess.Popen")
+    def test_shutdown_process_active(self, mock_subprocess, mock_psutil):
+        mock_process = MagicMock()
+        self.client.daemon_status = mock_process
+        self.client.shutdown_process()
+        mock_process.terminate.assert_called_once()
+        self.assertIsNone(self.client.daemon_status)
+
+    @patch("psutil.process_iter")
+    @patch("subprocess.Popen")
+    def test_shutdown_process_exception(self, mock_subprocess, mock_psutil):
+        mock_process = MagicMock()
+        mock_process.terminate.side_effect = Exception("Terminate failed")
+        self.client.daemon_status = mock_process
+        with self.assertRaises(Exception):
+            self.client.shutdown_process()
+        mock_process.kill.assert_not_called()
+        self.assertIsNotNone(self.client.daemon_status)
+
 
 class TestAsset(SetUp):
     def setUp(self):
