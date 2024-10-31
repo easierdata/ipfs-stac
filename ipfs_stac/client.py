@@ -548,8 +548,12 @@ class Asset:
             print(f"Error with CID fetch: {e}")
 
     # Pin to local kubo node
-    @ensure_data_fetched
+    # @ensure_data_fetched
     def pin(self) -> str:
+        self._is_pinned_to_local_node()
+        if self.is_pinned:
+            print("Content is already pinned")
+        else:
             response = requests.post(
                 f"http://{self.local_gateway}:{self.api_port}/api/v0/pin/add?arg={self.cid}",
                 timeout=10,
