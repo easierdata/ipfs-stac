@@ -1,10 +1,13 @@
 # Standard Library Imports
-from io import StringIO, BytesIO
 import os
 import json
+from io import StringIO, BytesIO
+from pathlib import Path
 from typing import List
 import warnings
 from typing import Union
+import subprocess
+import atexit
 
 # Third Party Imports
 import fsspec
@@ -16,6 +19,7 @@ from pystac import Collection, Item, ItemCollection
 import numpy as np
 import rasterio
 from yaspin import yaspin
+import psutil
 
 
 # Global Variables
