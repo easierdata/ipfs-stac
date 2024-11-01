@@ -205,6 +205,13 @@ class TestWeb3(SetUp):
         data_str = data.decode("utf-8")
         self.assertEqual(data_str, "Hello World!")
 
+    def test_uploadedCID_correct(self):
+        cid = self.client.uploadToIPFS(self.TEXT_FILE_PATH)
+        pinned_list = self.client.pinned_list()
+        
+        self.assertEqual(cid, self.TEXT_FILE_CID)
+        self.assertIn(self.TEXT_FILE_CID, pinned_list)
+
     def test_pinned_list(self):
         subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
         self.client.uploadToIPFS(self.TEXT_FILE_PATH, pin_content=True)
