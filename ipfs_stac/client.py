@@ -79,7 +79,7 @@ def fetchCID(cid: str) -> bytes:
 class Web3:
     def __init__(
         self,
-        local_gateway="127.0.0.1",
+        local_gateway="localhost",
         api_port=5001,
         gateway_port=8080,
         stac_endpoint=None,
