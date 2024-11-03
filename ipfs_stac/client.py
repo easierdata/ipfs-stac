@@ -563,6 +563,25 @@ class Asset:
             else:
                 print("Error pinning data")
 
+    def addToMFS(self, filename: str, mfs_path: str) -> None:
+        """
+        Add CID to MFS
+
+        :param filename str: Name of file
+        :param mfs_path str: Path in MFS
+        """
+        if filename is None or filename == "":
+            filename = self.cid
+        
+        response = requests.post(
+            f"http://{self.local_gateway}:{self.api_port}/api/v0/files/cp?arg=/ipfs/{self.cid}&arg={mfs_path}/{filename}",
+        )
+
+        if response.status_code == 200:
+            print("Data added to MFS successfully")
+        else:
+            print("Error adding data to MFS")
+
     # Returns asset as np array if image
     @ensure_data_fetched
     def to_np_ndarray(self, dtype: np.dtype = np.float32) -> np.ndarray:
