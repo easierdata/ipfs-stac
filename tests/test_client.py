@@ -229,7 +229,7 @@ class TestWeb3(SetUp):
         self.client.startDaemon()
 
         mock_popen.assert_called_once_with(["ipfs", "daemon"])
-        mock_post.assert_called_once_with("http://127.0.0.1:5001/api/v0/id", timeout=10)
+        mock_post.assert_called_once_with(f"http://{self.client.local_gateway}:{self.client.api_port}/api/v0/id", timeout=10)
 
     @patch("subprocess.Popen")
     @patch("requests.post")
