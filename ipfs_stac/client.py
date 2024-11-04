@@ -439,8 +439,16 @@ class Web3:
             )
             response.raise_for_status()  # Raise an exception for HTTP errors
 
-            data = response.json()
-            return data["Hash"]  # CID
+            # response.raise_for_status()  # Raise an exception for HTTP errors
+            if response.status_code == 200:
+                data = response.json()
+                print(
+                    f"Successfully added, {data['Name']}, to IPFS. CID: {data['Hash']}"
+                )
+                print(
+                    f"Click here to view: http://{data['Hash']}.ipfs.{self.local_gateway}:{self.gateway_port}"
+                )
+                return data["Hash"]
 
         except requests.exceptions.Timeout:
             print("The request timed out")
