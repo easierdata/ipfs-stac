@@ -409,7 +409,7 @@ class Web3:
                     f"{type(bytes_data)} is not a valid type. `bytes_data` must be of type bytes."
                 )
         elif file_path is not None:
-            if Path(file_path).exists():
+            if Path(file_path).resolve().exists():
                 with open(file_path, "rb") as f:
                     components["content"] = f.read()
             else:
