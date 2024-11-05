@@ -162,7 +162,7 @@ class Web3:
                 pass
         return False
 
-    def shutdown_process(self):
+    def shutdown_process(self) -> None:
         """Shutdown the IPFS daemon process"""
         if self.daemon_status:
             print("Shutdown process is running...")
@@ -182,7 +182,7 @@ class Web3:
 
             self.daemon_status = None
 
-    def startDaemon(self):
+    def startDaemon(self) -> None:
         """Start the IPFS daemon process
 
         Raises:
