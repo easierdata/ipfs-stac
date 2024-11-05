@@ -378,7 +378,7 @@ class Web3:
         except Exception as e:
             print(f"Error with getting assets: {e}")
 
-    def writeCID(self, cid: str, filePath: str) -> None:
+    def writeCID(self, cid: str, filePath: Union[str, Path]) -> None:
         """
         Write CID contents to local file system (WIP)
 
@@ -386,10 +386,17 @@ class Web3:
         :param filePath str: Directory to write contents to
         """
         try:
+            # Check filepath instance and convert to Path object if necessary
+            if isinstance(filePath, str):
+                filePath = Path(filePath).resolve()
+            else:
+                filePath = filePath.resolve()
+            data_payload = bytes()
             with fsspec.open(f"ipfs://{cid}", "rb") as contents:
+                data_payload = contents.read()
                 # Write data to local file path
-                with open(filePath, "wb") as copy:
-                    copy.write(contents.read())
+            with filePath.open("wb") as copy:
+                copy.write(data_payload)
         except Exception as e:
             print(f"Error with CID write: {e}")
 
