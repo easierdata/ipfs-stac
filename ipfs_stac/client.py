@@ -633,6 +633,8 @@ class Asset:
 
     # Returns asset as np array if image
     @ensure_data_fetched
-    def to_np_ndarray(self, dtype: np.dtype = np.float32) -> np.ndarray:
+    def to_np_ndarray(self, dtype: Union[np.dtype, type] = np.float32) -> np.ndarray:
+        if self.data is None:
+            raise ValueError("Data for asset has not been fetched yet")
         with rasterio.open(BytesIO(self.data)) as dataset:
             return dataset.read(1).astype(dtype)
