@@ -97,12 +97,6 @@ class Web3:
         self.collections = self._get_collections_ids()
         self.config = None
 
-        if api_port is None:
-            raise ValueError("api_port must be set")
-
-        if gateway_port is None:
-            raise ValueError("gateway_port must be set")
-
         self.api_port = api_port
         self.gateway_port = gateway_port
 
