@@ -3,9 +3,9 @@ import os
 import json
 from io import StringIO, BytesIO
 from pathlib import Path
-from typing import List
+from typing import Callable, List, Optional, Sequence
 import warnings
-from typing import Union, Iterator
+from typing import Union, Iterator, Any
 import subprocess
 import atexit
 
@@ -31,8 +31,8 @@ REMOTE_GATEWAYS = [
 ]
 
 
-def ensure_data_fetched(func):
-    def wrapper(self, *args, **kwargs):
+def ensure_data_fetched(func) -> Callable[..., Any]:
+    def wrapper(self, *args, **kwargs) -> Any:
         if self.data is None:
             print("Data for asset has not been fetched yet. Fetching now...")
             self.fetch()
@@ -81,10 +81,10 @@ def fetchCID(cid: str) -> bytes:
 class Web3:
     def __init__(
         self,
-        local_gateway="localhost",
-        api_port=5001,
-        gateway_port=8080,
-        stac_endpoint=None,
+        local_gateway: str = "localhost",
+        api_port: int = 5001,
+        gateway_port: int = 8080,
+        stac_endpoint: str = "",
     ) -> None:
         """
         web3 client constructor
@@ -96,7 +96,7 @@ class Web3:
         self.stac_endpoint = stac_endpoint
         self.daemon_status = None
         self.client: Client = Client.open(self.stac_endpoint)
-        self.collections = self._get_collections_ids()
+        self.collections: List[str] = self._get_collections_ids()
         self.config = None
 
         self.api_port = api_port
@@ -115,7 +115,7 @@ class Web3:
         # with open(config_path, "r") as f:
         #     self.config = json.load(f)
 
-    def overwrite_config(self, path=None) -> None:
+    def overwrite_config(self, path: Optional[Path] = None) -> None:
         """
         *only use if you know what you're doing*
         Overwrite configuration file with configuration in memory
@@ -124,13 +124,13 @@ class Web3:
         """
 
         # Get user's home directory
-        home = os.path.expanduser("~")
+        home = Path.home()
         if path:
             config_path = path
         else:
-            config_path = os.path.join(home, ".ipfs", "config")
+            config_path = Path(home, ".ipfs", "config")
 
-        with open(config_path, "w", encoding="utf-8") as f:
+        with Path.open(config_path, "w", encoding="utf-8") as f:
             json.dump(self.config, f)
 
     def _get_collections_ids(self) -> List[str]:
@@ -139,7 +139,7 @@ class Web3:
         """
         return [collection.id for collection in self.client.get_collections()]
 
-    def get_collections(self) -> List[Iterator[Union[Collection, CollectionClient]]]:
+    def getCollections(self) -> Sequence[Collection]:
         """
         Returns list of collections from STAC endpoint
         """
@@ -203,20 +203,22 @@ class Web3:
             print(f"Error starting IPFS daemon: {exc}")
             raise Exception("Failed to start IPFS daemon")
 
-    def getFromCID(self, cid: str) -> bytes:
+    def getFromCID(self, cid: str) -> Union[bytes, None]:
         """
         Retrieves raw data from CID
 
         :param str cid: CID to retrieve
         """
+        content_cid = None
         try:
-            return fetchCID(cid)
+            content_cid = fetchCID(cid)
         except FileNotFoundError as e:
             print(f"Could not file with CID: {cid}. Are you sure it exists?")
             raise e
+        return content_cid
 
     def searchSTACByBox(
-        self, bbox: List["str"], collections: List["str"]
+        self, bbox: List[float], collections: List[str]
     ) -> ItemCollection:
         """
         Search STAC catalog by bounding box and return array of items
@@ -254,9 +256,10 @@ class Web3:
                 print(f"Search method docstring: {self.client.search.__doc__}")
             else:
                 print(f"Error: {e}")
+            return ItemCollection([])
 
     def searchSTACByBoxIndex(
-        self, bbox: List["str"], collections: List["str"], index: int
+        self, bbox: List[float], collections: List[str], index: int
     ) -> Item:
         """
         Search STAC catalog by bounding box and return singular item
@@ -283,7 +286,7 @@ class Web3:
 
     def getAssetNames(
         self, stac_obj: Union[CollectionClient, ItemCollection, Item]
-    ) -> List[str]:
+    ) -> Union[List[str], None]:
         """Get a list of unique asset names from a STAC object
 
         Args:
@@ -308,7 +311,7 @@ class Web3:
                 asset_names.update(names)
             return sorted(asset_names)
 
-        if stac_obj is None:
+        if not stac_obj:
             raise ValueError(
                 "STAC Object (CollectionClient, ItemCollection, Item) must be provided"
             )
@@ -336,8 +339,8 @@ class Web3:
             )
 
     def getAssetFromItem(
-        self, item: Item, asset_name: str, fetch_data=False
-    ) -> "Asset":
+        self, item: Item, asset_name: str, fetch_data: bool = False
+    ) -> Union["Asset", None]:
         """Returns asset object from item
 
         Args:
@@ -363,7 +366,9 @@ class Web3:
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
-    def getAssetsFromItem(self, item: Item, assets: List[str]) -> List["Asset"]:
+    def getAssetsFromItem(
+        self, item: Item, assets: List[str]
+    ) -> Union[List["Asset"], None]:
         """
         Returns array of asset objects from item
 
@@ -491,7 +496,7 @@ class Web3:
 
     def pinned_list(
         self, pin_type: str = "recursive", names: bool = False
-    ) -> List[str]:
+    ) -> Union[List[str], None]:
         """Fetch pinned CIDs from local node
 
         Args:
@@ -514,10 +519,9 @@ class Web3:
                     return list(response.json())
                 else:
                     return list(response.json()["Keys"].keys())
-            else:
-                return []
         else:
             print("Error fetching pinned CIDs")
+            return [""]
 
     def getCSVDataframeFromCID(self, cid: str) -> pd.DataFrame:
         """
@@ -540,10 +544,18 @@ class Web3:
         except Exception as e:
             print(f"Error with dataframe retrieval: {e}")
 
+        # Return an empty DataFrame
+        return pd.DataFrame()
+
 
 class Asset:
     def __init__(
-        self, cid: str, local_gateway: str, api_port, fetch_data=False, name: str = None
+        self,
+        cid: str,
+        local_gateway: str,
+        api_port: int,
+        fetch_data: bool = False,
+        name: Optional[str] = None,
     ) -> None:
         """
         Constructor for asset object
@@ -551,13 +563,13 @@ class Asset:
         :param cid str: The CID associated with the object
         :param local_gateway str: Local gateway endpoint
         """
-        self.cid = cid
+        self.cid: str = cid
         self.local_gateway = local_gateway
         self.api_port = api_port
-        self.data: bytes = None
+        self.data: Optional[bytes] = None
         self.is_pinned = False
 
-        if name != None:
+        if name:
             self.name = name
         else:
             self.name = cid
@@ -594,7 +606,7 @@ class Asset:
 
     # Pin to local kubo node
     # @ensure_data_fetched
-    def pin(self) -> str:
+    def pin(self) -> None:
         self._is_pinned_to_local_node()
         if self.is_pinned:
             print("Content is already pinned")
