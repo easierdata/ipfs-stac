@@ -14,7 +14,7 @@ import fsspec
 import requests
 import pandas as pd
 from bs4 import BeautifulSoup
-from pystac_client import Client
+from pystac_client import Client, CollectionClient
 from pystac import Collection, Item, ItemCollection
 import numpy as np
 import rasterio
@@ -275,36 +275,59 @@ class Web3:
 
         return search_results.item_collection()[index]
 
-    def getAssetNames(self, stac_obj: Union[Collection, Item] = None) -> List[str]:
-        """
-        Returns list of asset names from collection or item
+    def getAssetNames(
+        self, stac_obj: Union[CollectionClient, ItemCollection, Item]
+    ) -> List[str]:
+        """Get a list of unique asset names from a STAC object
 
-        :param stac_obj: STAC collection or item
+        Args:
+            stac_obj (Union[CollectionClient, ItemCollection, Item], optional): STAC object to get asset names from.
+
+        Returns:
+            List[str]: A sorted list of unique asset names.
         """
+
+        def get_asset_names_from_items(items: List[Item]) -> List[str]:
+            """Get asset names from list of items
+
+            Args:
+                items (List[Item]): List of STAC item objects
+
+            Returns:
+                List[str]: A sorted list of unique asset names.
+            """
+            asset_names = set()
+            for item in items:
+                names = list(item.get_assets().keys())
+                asset_names.update(names)
+            return sorted(asset_names)
 
         if stac_obj is None:
-            raise ValueError("STAC Object (Collection or item) must be provided")
+            raise ValueError(
+                "STAC Object (CollectionClient, ItemCollection, Item) must be provided"
+            )
 
-        if not isinstance(stac_obj, Collection) and not isinstance(stac_obj, Item):
-            raise ValueError("STAC Object must be a Collection or Item")
-
-        if type(stac_obj) is Collection:
+        if isinstance(stac_obj, CollectionClient):
             try:
-                asset_names = set()
-                items = stac_obj.get_all_items()
-
-                for i in items:
-                    names = list(i.get_assets().keys())
-                    asset_names.update(names)
-
-                return list(asset_names)
+                items = stac_obj.get_items()
+                return get_asset_names_from_items(list(items))
             except Exception as e:
                 print(f"Error with getting asset names: {e}")
-        elif type(stac_obj) is Item:
+        elif isinstance(stac_obj, ItemCollection):
             try:
-                return list(stac_obj.get_assets().keys())
+                items = stac_obj.items
+                return get_asset_names_from_items(list(items))
             except Exception as e:
                 print(f"Error with getting asset names: {e}")
+        elif isinstance(stac_obj, Item):
+            try:
+                return sorted(stac_obj.get_assets().keys())
+            except Exception as e:
+                print(f"Error with getting asset names: {e}")
+        else:
+            raise ValueError(
+                "STAC Object must be a Collection, Item, or ItemCollection"
+            )
 
     def getAssetFromItem(
         self, item: Item, asset_name: str, fetch_data=False
