@@ -347,7 +347,13 @@ class Web3:
             cid = item_dict["assets"][f"{asset_name}"]["alternate"]["IPFS"][
                 "href"
             ].split("/")[-1]
-            return Asset(cid, self.local_gateway, self.api_port, fetch_data=fetch_data, name=asset_name)
+            return Asset(
+                cid,
+                self.local_gateway,
+                self.api_port,
+                fetch_data=fetch_data,
+                name=asset_name,
+            )
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
@@ -609,9 +615,10 @@ class Asset:
         """
         if filename is None or filename == "":
             filename = self.name
-        
+
         response = requests.post(
             f"http://{self.local_gateway}:{self.api_port}/api/v0/files/cp?arg=/ipfs/{self.cid}&arg={mfs_path}/{filename}",
+            timeout=10,
         )
 
         if response.status_code == 200:
