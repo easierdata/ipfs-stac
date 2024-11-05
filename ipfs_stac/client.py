@@ -263,6 +263,14 @@ class Web3:
         :param collections array: Array of collection names
         :param index int: Index of item to return
         """
+        # Validate Bounding box coordinates before trying to search
+        if (
+            not isinstance(bbox, list)
+            or len(bbox) != 4
+            or not all(isinstance(coord, float) for coord in bbox)
+        ):
+            raise ValueError("bbox must be a list of four float numbers")
+
         catalog = Client.open(self.stac_endpoint)
         search_results = catalog.search(
             collections=collections,
