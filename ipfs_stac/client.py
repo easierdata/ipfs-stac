@@ -109,8 +109,10 @@ class Web3:
         if self.local_gateway:
             self.startDaemon()
 
-        # Add the env var if it doesn't exist or overwrite existing one.
-        os.environ[ENV_VAR_NAME] = f"http://{self.local_gateway}:{self.gateway_port}"
+        # When local gateway is `localhost``, ipfsspec does not play well with it.
+        # This is a workaround to set the environment variable to the local gateway as `127.0.0.1`
+        if self.local_gateway == "localhost":
+            os.environ[ENV_VAR_NAME] = f"http://127.0.0.1:{self.gateway_port}"
 
         # Load configuration at instantiation
         # config_path = os.path.join(os.path.dirname(__file__), "config.json")
