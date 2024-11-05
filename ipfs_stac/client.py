@@ -5,7 +5,7 @@ from io import StringIO, BytesIO
 from pathlib import Path
 from typing import List
 import warnings
-from typing import Union
+from typing import Union, Iterator
 import subprocess
 import atexit
 
@@ -141,7 +141,7 @@ class Web3:
         """
         return [collection.id for collection in self.client.get_collections()]
 
-    def get_collections(self) -> List["Collection"]:
+    def get_collections(self) -> List[Iterator[Union[Collection, CollectionClient]]]:
         """
         Returns list of collections from STAC endpoint
         """
