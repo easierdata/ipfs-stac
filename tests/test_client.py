@@ -208,7 +208,7 @@ class TestWeb3(SetUp):
     def test_uploadedCID_correct(self):
         cid = self.client.uploadToIPFS(self.TEXT_FILE_PATH)
         pinned_list = self.client.pinned_list()
-        
+
         self.assertEqual(cid, self.TEXT_FILE_CID)
         self.assertIn(self.TEXT_FILE_CID, pinned_list)
 
@@ -229,7 +229,10 @@ class TestWeb3(SetUp):
         self.client.startDaemon()
 
         mock_popen.assert_called_once_with(["ipfs", "daemon"])
-        mock_post.assert_called_once_with(f"http://{self.client.local_gateway}:{self.client.api_port}/api/v0/id", timeout=10)
+        mock_post.assert_called_once_with(
+            f"http://{self.client.local_gateway}:{self.client.api_port}/api/v0/id",
+            timeout=10,
+        )
 
     @patch("subprocess.Popen")
     @patch("requests.post")
