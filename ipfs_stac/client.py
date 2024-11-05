@@ -347,7 +347,7 @@ class Web3:
             cid = item_dict["assets"][f"{asset_name}"]["alternate"]["IPFS"][
                 "href"
             ].split("/")[-1]
-            return Asset(cid, self.local_gateway, self.api_port, fetch_data=fetch_data)
+            return Asset(cid, self.local_gateway, self.api_port, fetch_data=fetch_data, name=asset_name)
         except Exception as e:
             print(f"Error with getting asset: {e}")
 
@@ -532,7 +532,7 @@ class Web3:
 
 class Asset:
     def __init__(
-        self, cid: str, local_gateway: str, api_port, fetch_data=False
+        self, cid: str, local_gateway: str, api_port, fetch_data=False, name: str = None
     ) -> None:
         """
         Constructor for asset object
@@ -545,6 +545,12 @@ class Asset:
         self.api_port = api_port
         self.data: bytes = None
         self.is_pinned = False
+
+        if name != None:
+            self.name = name
+        else:
+            self.name = cid
+
         if fetch_data:
             self.fetch()
 
@@ -602,7 +608,7 @@ class Asset:
         :param mfs_path str: Path in MFS
         """
         if filename is None or filename == "":
-            filename = self.cid
+            filename = self.name
         
         response = requests.post(
             f"http://{self.local_gateway}:{self.api_port}/api/v0/files/cp?arg=/ipfs/{self.cid}&arg={mfs_path}/{filename}",
