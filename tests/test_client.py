@@ -1,4 +1,5 @@
 ## Standard Library Imports
+from pathlib import Path
 from unittest.mock import Mock, mock_open, patch, MagicMock
 from io import BytesIO
 import subprocess
@@ -18,15 +19,15 @@ from .base import SetUp, import_configuration
 # import configuration settings from config.json file
 props = import_configuration()
 
-LOCAL_GATEWAY = props["ipfs_gateway_ip"]
-API_PORT = props["ipfs_api_port"]
-STAC_ENDPOINT = props["stac_endpoint"]
-GATEWAY_PORT = props["ipfs_gateway_port"]
+LOCAL_GATEWAY = str(props["ipfs_gateway_ip"])
+STAC_ENDPOINT = str(props["stac_endpoint"])
+API_PORT = int(props["ipfs_api_port"])
+GATEWAY_PORT = int(props["ipfs_gateway_port"])
 SAMPLE_STAC_ENDPOINT_URL = "https://landsatlook.usgs.gov/stac-server/"
 
 
 class TestWeb3(SetUp):
-    def setUp(self):
+    def setUp(self) -> None:
         self.client = Web3(
             local_gateway=LOCAL_GATEWAY,
             stac_endpoint=STAC_ENDPOINT,
@@ -39,11 +40,13 @@ class TestWeb3(SetUp):
 
     def test_getFromCID_text(self):
         data = self.client.getFromCID(self.TEXT_FILE_CID)
+        assert data is not None
         data_str = data.decode("utf-8")
         self.assertEqual(data_str, "Hello World!")
 
     def test_getFromCID_image(self):
         data = self.client.getFromCID(self.IMAGE_FILE_CID)
+        assert data is not None
         image = Image.open(BytesIO(data))
         # xkcd comic
         self.assertEqual(image.size, (50, 50))
@@ -71,7 +74,7 @@ class TestWeb3(SetUp):
         client = Web3(stac_endpoint=SAMPLE_STAC_ENDPOINT_URL)
 
         # Call the function
-        bbox = [10, 20, 30, 40]
+        bbox = [10.0, 20.0, 30.0, 40.0]
         collections = ["collection1", "collection2"]
         result = client.searchSTACByBox(bbox, collections)
 
@@ -102,7 +105,7 @@ class TestWeb3(SetUp):
         client = Web3(stac_endpoint=SAMPLE_STAC_ENDPOINT_URL)
 
         # Call the function
-        bbox = [10, 20, 30, 40]
+        bbox = [10.0, 20.0, 30.0, 40.0]
         collections = ["collection1", "collection2"]
         index = 1
         result = client.searchSTACByBoxIndex(bbox, collections, index)
@@ -158,7 +161,7 @@ class TestWeb3(SetUp):
         item = Item.from_dict(item_dict)
         asset_names = ["asset1", "asset2"]
         assetArray = self.client.getAssetsFromItem(item, asset_names)
-
+        assert assetArray is not None
         self.assertEqual(len(assetArray), 2)
         self.assertEqual(str(assetArray[0]), "cid1")
         self.assertEqual(str(assetArray[1]), "cid2")
@@ -170,8 +173,11 @@ class TestWeb3(SetUp):
 
         # Dummy CID and file path
         cid = "fake_cid"
-        filePath = "path/to/yourfile.txt"
+        filePath = Path("tests/data/yourfile.txt").resolve()
 
+        # Delete the file if it exists
+        if filePath.exists():
+            filePath.unlink()
         # Create a mock file object
         mock_file = mock_open()
         contents = b"file contents"
@@ -186,36 +192,45 @@ class TestWeb3(SetUp):
             client.writeCID(cid, filePath)
 
             # Assert that the file was opened with correct path and mode
-            mock_file.assert_called_once_with(filePath, "wb")
-
+            # mock_file.assert_called_once_with(filePath.as_posix(), "wb")
             # Assert that the contents were written to the file
-            mock_file().write.assert_called_once_with(contents)
+            # mock_file().write.assert_called_once_with(contents)
+
+            # Check if the content in the file is the same as the content we expect by not using the mock.write method
+            with Path.open(filePath, "rb") as f:
+                data = f.read()
+                self.assertEqual(data, contents)
 
     def test_uploadToIPFS_file_path(self):
-        cid = self.client.uploadToIPFS(self.TEXT_FILE_PATH)
+        cid = self.client.uploadToIPFS(content=self.TEXT_FILE_PATH)
+        assert cid is not None
         data = self.client.getFromCID(cid)
+        assert data is not None
         data_str = data.decode("utf-8")
         self.assertEqual(data_str, "Hello World!")
 
     def test_uploadToIPFS_bytes(self):
-        with open(self.TEXT_FILE_PATH, "rb") as f:
+        with Path.open(self.TEXT_FILE_PATH, "rb") as f:
             bytes = f.read()
-        cid = self.client.uploadToIPFS(bytes_data=bytes)
+        cid = self.client.uploadToIPFS(content=bytes)
+        assert cid is not None
         data = self.client.getFromCID(cid)
+        assert data is not None
         data_str = data.decode("utf-8")
         self.assertEqual(data_str, "Hello World!")
 
     def test_uploadedCID_correct(self):
-        cid = self.client.uploadToIPFS(self.TEXT_FILE_PATH)
-        pinned_list = self.client.pinned_list()
-
+        cid = self.client.uploadToIPFS(content=self.TEXT_FILE_PATH)
         self.assertEqual(cid, self.TEXT_FILE_CID)
+        pinned_list = self.client.pinned_list()
+        assert pinned_list is not None
         self.assertIn(self.TEXT_FILE_CID, pinned_list)
 
     def test_pinned_list(self):
         subprocess.run(f"ipfs pin rm {self.TEXT_FILE_CID}", shell=True)
-        self.client.uploadToIPFS(self.TEXT_FILE_PATH, pin_content=True)
+        self.client.uploadToIPFS(content=self.TEXT_FILE_PATH, pin_content=True)
         pinned_list = self.client.pinned_list()
+        assert pinned_list is not None
         self.assertIn(self.TEXT_FILE_CID, pinned_list)
 
     @patch("psutil.process_iter")
@@ -316,6 +331,7 @@ class TestWeb3(SetUp):
         mock_atexit.assert_called_once_with(self.client.shutdown_process)
 
         # Simulate shutdown
+        assert self.client.daemon_status is not None
         self.client.daemon_status.terminate()
         self.client.daemon_status.kill()
         self.client.shutdown_process()
@@ -404,6 +420,7 @@ class TestAsset(SetUp):
     def test_fetch(self):
         assert self.text_asset_no_fetch.data is None
         self.text_asset_no_fetch.fetch()
+        assert self.text_asset_no_fetch.data is not None
         content = self.text_asset_no_fetch.data.decode("utf-8")
         self.assertEqual(content, "Hello World!")
 
