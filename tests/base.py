@@ -1,8 +1,7 @@
+from typing import Dict, Union
 from unittest import TestCase
 import requests
-import time
 import subprocess
-import os
 import json
 import warnings
 from pathlib import Path
@@ -11,21 +10,21 @@ from pathlib import Path
 # Default config properties and params. DO NOT MODIFY.
 # These are the default values for the configuration file. Modify these values in the `config.json` file.
 CONFIG_FILE_NAME = "config.json"
-IPFS_GATEWAY_ADDR = "127.0.0.1"
-IPFS_API_PORT = "5001"
-IPFS_GATEWAY_PORT = "8080"
-STAC_ENDPOINT = "https://stac.easierdata.info"
+# IPFS_GATEWAY_ADDR = "127.0.0.1"
+# IPFS_API_PORT = 5001
+# IPFS_GATEWAY_PORT = 8080
+# STAC_ENDPOINT = "https://stac.easierdata.info"
 
 # Set default configuration dictionary
 DEFAULT_CONFIG = {
-    "ipfs_gateway_ip": IPFS_GATEWAY_ADDR,
-    "ipfs_api_port": IPFS_API_PORT,
-    "ipfs_gateway_port": IPFS_GATEWAY_PORT,
-    "stac_endpoint": STAC_ENDPOINT,
+    "ipfs_gateway_ip": "127.0.0.1",
+    "ipfs_api_port": 5001,
+    "ipfs_gateway_port": 8080,
+    "stac_endpoint": "https://stac.easierdata.info",
 }
 
 
-def get_tests_dir():
+def get_tests_dir() -> str:
     # Path.cwd()
     return Path(Path.cwd(), "tests").as_posix()
 
@@ -37,7 +36,7 @@ TEST_DATA_DIR = Path(TEST_DIR, "data")
 # cwd = Path(cwd.parent, "tests")
 
 
-def start_ipfs_if_needed():
+def start_ipfs_if_needed() -> Union[subprocess.Popen[bytes], None]:
     config = import_configuration()
     try:
         heartbeat_response = requests.post(
@@ -59,10 +58,14 @@ def start_ipfs_if_needed():
         raise Exception("Failed to start IPFS daemon")
 
 
-def import_configuration():
+def import_configuration() -> Dict[str, Union[str, int]]:
+    """
+    Import configuration settings from the config.json file.
+    If the file does not exist, create it with default settings.
+    """
 
     try:
-        with open(Path(TEST_DIR, CONFIG_FILE_NAME), "r", encoding="utf-8") as f:
+        with Path.open(Path(TEST_DIR, CONFIG_FILE_NAME), "r", encoding="utf-8") as f:
             config = json.load(f)
         return config
     except FileNotFoundError as e:
@@ -80,10 +83,10 @@ def import_configuration():
         return config
 
 
-def save_config(config_dict):
+def save_config(config_dict: Dict) -> None:
     # create file if it does not exist
     Path.touch(Path(TEST_DIR, CONFIG_FILE_NAME), exist_ok=True)
-    json.dump(config_dict, open(Path(TEST_DIR, CONFIG_FILE_NAME), "w"))
+    json.dump(config_dict, Path.open(Path(TEST_DIR, CONFIG_FILE_NAME), "w"))
 
 
 class SetUp(TestCase):
@@ -96,8 +99,7 @@ class SetUp(TestCase):
     def setUpClass(cls):
 
         if any(
-            not os.path.exists(path)
-            for path in [cls.TEXT_FILE_PATH, cls.IMAGE_FILE_PATH]
+            not Path.exists(path) for path in [cls.TEXT_FILE_PATH, cls.IMAGE_FILE_PATH]
         ):
             subprocess.run(
                 ["python3", f"{Path(TEST_DATA_DIR, 'create_upload_data.py')}"]
