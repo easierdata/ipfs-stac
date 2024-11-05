@@ -394,19 +394,17 @@ class Web3:
     # Use overrideDefault decorator to force local gateway usage
     def uploadToIPFS(
         self,
-        file_path: str = None,
-        bytes_data: bytes = None,
-        file_name: str = None,
+        content: Union[str, Path, bytes],
+        file_name: Optional[str] = None,
         pin_content: bool = False,
-        mfs_path: str = None,
-        chunker: str = None,
-    ) -> str:
+        mfs_path: Optional[str] = None,
+        chunker: Optional[str] = None,
+    ) -> None:
         """
         Uploads a file or bytes data to IPFS.
 
         Args:
-            file_path (str, optional): The path to the file to be uploaded. Defaults to None.
-            bytes_data (bytes, optional): The bytes data to be uploaded. Defaults to None.
+            content (Union[str, Path, bytes]): The path to the file or bytes data to be uploaded.
             file_name (str, optional): The name of the file. Defaults to None.
             pin_content (bool, optional): Pin locally to protect added files from garbage collection. Defaults to False.
             mfs_path (str, optional): Add reference to Files API (MFS) at the provided path. Defaults to None.
@@ -423,38 +421,32 @@ class Web3:
 
         # Setting param options
         param_options = f"cid-version=1&pin={pin_content}"
-        if mfs_path is not None:
+        if mfs_path:
             param_options = f"{param_options}&to-files={mfs_path}"
-        if chunker is not None:
+        if chunker:
             param_options = f"{param_options}&chunker={chunker}"
 
         # Define empty payload dictionary
-        components = {"content": None, "name": None}
+        components = {"content": b"", "name": str}
 
-        # Check if user provided a file path or bytes data
-        if bytes_data is not None:
-            if isinstance(bytes_data, bytes):
-                components["content"] = bytes_data
-            else:
-                raise ValueError(
-                    f"{type(bytes_data)} is not a valid type. `bytes_data` must be of type bytes."
-                )
-        elif file_path is not None:
-            if Path(file_path).resolve().exists():
-                with open(file_path, "rb") as f:
+        # Check the type of content and handle accordingly
+        if isinstance(content, bytes):
+            components["content"] = content
+            if not file_name:
+                components["name"] = None
+        elif isinstance(content, (str, Path)):
+            file_path = Path(content)
+            if file_path.resolve().exists():
+                with Path.open(file_path) as f:
                     components["content"] = f.read()
+                if not file_name:
+                    components["name"] = file_path.name
             else:
                 raise FileNotFoundError(
-                    f"The file path provided does not exist. Please check {file_path}"
+                    f"The file path provided does not exist. Please check {content}"
                 )
         else:
-            raise ValueError("Either file_path or bytes_data must be provided.")
-
-        # Check if user provided a filename
-        if file_name:
-            components["name"] = file_name
-        elif file_path:
-            components["name"] = Path(file_path).name
+            raise ValueError("`content` must be of type `Union[str, Path, bytes]`.")
 
         # put the components together as a file payload
         if components["name"] is not None:
