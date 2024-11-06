@@ -455,8 +455,10 @@ class Web3:
             if file_path.exists():
                 with Path.open(file_path) as f:
                     components["content"] = f.read()
-                if not file_name:
                     components["name"] = file_path.name
+                # Override the file name if user provides one
+                if file_name:
+                    components["name"] = file_name
             else:
                 raise FileNotFoundError(
                     f"The file path provided does not exist. Please check {content}"
