@@ -451,8 +451,8 @@ class Web3:
             if not file_name:
                 components["name"] = None
         elif isinstance(content, (str, Path)):
-            file_path = Path(content)
-            if file_path.resolve().exists():
+            file_path = Path(content).resolve()
+            if file_path.exists():
                 with Path.open(file_path) as f:
                     components["content"] = f.read()
                 if not file_name:
