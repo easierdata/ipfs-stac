@@ -200,6 +200,8 @@ class TestWeb3(SetUp):
             with Path.open(filePath, "rb") as f:
                 data = f.read()
                 self.assertEqual(data, contents)
+            if filePath.exists():
+                filePath.unlink()
 
     def test_uploadToIPFS_file_path(self):
         cid = self.client.uploadToIPFS(content=self.TEXT_FILE_PATH)
