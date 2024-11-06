@@ -443,7 +443,7 @@ class Web3:
             param_options = f"{param_options}&chunker={chunker}"
 
         # Define empty payload dictionary
-        components = {"content": b"", "name": str}
+        components = {"content": b"", "name": None}
 
         # Check the type of content and handle accordingly
         if isinstance(content, bytes):
