@@ -31,7 +31,6 @@ REMOTE_GATEWAYS = [
     "https://dweb.link",
 ]
 
-
 def ensure_data_fetched(func) -> Callable[..., Any]:
     def wrapper(self, *args, **kwargs) -> Any:
         if self.data is None:
@@ -78,7 +77,7 @@ def fetchCID(cid: str) -> bytes:
         print(f"Could not file with CID: {cid}. Are you sure it exists?")
         raise e
 
-def fetchCIDWithHTTP(cid: str, gateway: str, gateway_port: int) -> bytes | None:
+def fetchCIDWithHTTP(cid: str, gateway: str, api_port: int) -> Union[bytes, None]:
     """
     Fetch data from CID using Kubo RPC API
 
@@ -87,8 +86,8 @@ def fetchCIDWithHTTP(cid: str, gateway: str, gateway_port: int) -> bytes | None:
     :param int gateway_port: Gateway port
     """
     try:
-        url = f"http://{gateway}:{gateway_port}/api/v0/cat?arg={cid}"
-        response = requests.get(url)
+        url = f"http://{gateway}:{api_port}/api/v0/cat?arg={cid}&progress=true"
+        response = requests.post(url)
 
         if response.status_code == 200:
             return response.content
@@ -238,7 +237,7 @@ class Web3:
         content_cid = None
         try:
             if self.use_https:
-                content_cid = fetchCIDWithHTTP(cid, self.local_gateway, self.gateway_port)
+                content_cid = fetchCIDWithHTTP(cid, self.local_gateway, self.api_port)
             else:
                 content_cid = fetchCID(cid)
         except FileNotFoundError as e:
