@@ -5,9 +5,10 @@ from io import StringIO, BytesIO
 from pathlib import Path
 from typing import Callable, List, Optional, Sequence
 import warnings
-from typing import Union, Iterator, Any
+from typing import Union, Any
 import subprocess
 import atexit
+import requests
 
 # Third Party Imports
 import fsspec
@@ -77,6 +78,26 @@ def fetchCID(cid: str) -> bytes:
         print(f"Could not file with CID: {cid}. Are you sure it exists?")
         raise e
 
+def fetchCIDWithHTTP(cid: str, gateway: str, gateway_port: int) -> bytes | None:
+    """
+    Fetch data from CID using Kubo RPC API
+
+    :param str cid: CID to retrieve
+    :param str gateway: Gateway host
+    :param int gateway_port: Gateway port
+    """
+    try:
+        url = f"http://{gateway}:{gateway_port}/api/v0/cat?arg={cid}"
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            return response.content
+        else:
+            print(f"Error fetching CID: {cid}")
+            return None
+    except Exception as e:
+        print(f"Could not file with CID: {cid}. Are you sure it exists?")
+        raise e
 
 class Web3:
     def __init__(
@@ -85,12 +106,16 @@ class Web3:
         api_port: int = 5001,
         gateway_port: int = 8080,
         stac_endpoint: str = "",
+        use_https: bool = False,
     ) -> None:
         """
         web3 client constructor
 
         :param str local_gateway: Local gateway endpoint without port.
+        :param int api_port: API port for IPFS
+        :param int gateway_port: Gateway port for IPFS
         :param str stac_endpoint: STAC browser endpoint
+        :param bool use_https: Use HTTPS for local gateway
         """
         self.local_gateway = local_gateway
         self.stac_endpoint = stac_endpoint
@@ -98,6 +123,7 @@ class Web3:
         self.client: Client = Client.open(self.stac_endpoint)
         self.collections: List[str] = self._get_collections_ids()
         self.config = None
+        self.use_https = use_https
 
         self.api_port = api_port
         self.gateway_port = gateway_port
@@ -211,7 +237,10 @@ class Web3:
         """
         content_cid = None
         try:
-            content_cid = fetchCID(cid)
+            if self.use_https:
+                content_cid = fetchCIDWithHTTP(cid, self.local_gateway, self.gateway_port)
+            else:
+                content_cid = fetchCID(cid)
         except FileNotFoundError as e:
             print(f"Could not file with CID: {cid}. Are you sure it exists?")
             raise e
@@ -362,6 +391,7 @@ class Web3:
                 self.api_port,
                 fetch_data=fetch_data,
                 name=asset_name,
+                use_https=self.use_https,
             )
         except Exception as e:
             print(f"Error with getting asset: {e}")
@@ -558,18 +588,24 @@ class Asset:
         api_port: int,
         fetch_data: bool = False,
         name: Optional[str] = None,
+        use_https: bool = False,
     ) -> None:
         """
         Constructor for asset object
 
         :param cid str: The CID associated with the object
         :param local_gateway str: Local gateway endpoint
+        :param api_port int: API port for IPFS
+        :param fetch_data bool: Fetch data on instantiation
+        :param name str: Name of asset
+        :param use_https bool: Use HTTPS for local gateway
         """
         self.cid: str = cid
         self.local_gateway = local_gateway
         self.api_port = api_port
         self.data: Optional[bytes] = None
         self.is_pinned = False
+        self.use_https = use_https
 
         if name:
             self.name = name
@@ -602,7 +638,10 @@ class Asset:
 
     def fetch(self) -> None:
         try:
-            self.data = fetchCID(self.cid)
+            if self.use_https:
+                self.data = fetchCIDWithHTTP(self.cid, self.local_gateway, self.api_port)
+            else:
+                self.data = fetchCID(self.cid)
         except Exception as e:
             print(f"Error with CID fetch: {e}")
 
